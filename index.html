@@ -1,0 +1,3421 @@
+<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Pibb Eruption | Revista Científica Digital</title>
+
+   
+
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Lora:ital,wght@0,400;1,700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+
+    <style>
+
+        :root {
+
+            --volcanic-red: #871908;
+
+            --ash-gray: #f4f4f4;
+
+            --dark-text: #2d2d2d;
+
+            --accent: #a3210d;
+
+            --white: #ffffff;
+
+            --forest-green: #2d5a27;
+
+            --lava-glow: #ffcc00;
+
+        }
+
+
+        [data-theme="dark"] {
+
+            --ash-gray: #121212;
+
+            --dark-text: #e0e0e0;
+
+            --white: #1e1e1e;
+
+            --accent: #ff4d4d;
+
+        }
+
+
+        * { box-sizing: border-box; transition: background-color 0.3s, color 0.3s; }
+
+
+        body {
+
+            margin: 0;
+
+            font-family: 'Lora', serif;
+
+            background-color: var(--ash-gray);
+
+            color: var(--dark-text);
+
+            line-height: 1.8;
+
+            overflow-x: hidden;
+
+        }
+
+
+        /* --- ESTILOS TARJETAS EXPANSIBLES --- */
+
+        .expandable-container {
+
+            margin: 20px 0;
+
+        }
+
+
+        .expand-card {
+
+            background: var(--white);
+
+            border: 1px solid #ddd;
+
+            border-radius: 8px;
+
+            margin-bottom: 10px;
+
+            overflow: hidden;
+
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
+
+        }
+
+
+        .expand-header {
+
+            background: var(--ash-gray);
+
+            padding: 15px 20px;
+
+            cursor: pointer;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            font-family: 'Montserrat', sans-serif;
+
+            font-weight: bold;
+
+            color: var(--volcanic-red);
+
+            border-bottom: 1px solid transparent;
+
+            transition: background 0.3s;
+
+        }
+
+
+        .expand-header:hover {
+
+            background: #e8e8e8;
+
+        }
+
+
+        .expand-content {
+
+            max-height: 0;
+
+            overflow: hidden;
+
+            transition: max-height 0.4s ease-out, padding 0.3s ease;
+
+            padding: 0 20px;
+
+        }
+
+
+        .expand-card.active .expand-content {
+
+            max-height: 1000px;
+
+            padding: 20px;
+
+        }
+
+
+        .expand-card.active .expand-header {
+
+            border-bottom: 1px solid #ddd;
+
+        }
+
+
+        .icon-arrow {
+
+            transition: transform 0.3s;
+
+        }
+
+
+        .expand-card.active .icon-arrow {
+
+            transform: rotate(180deg);
+
+        }
+
+
+        .hero-background {
+
+            position: relative;
+
+            width: 100%;
+
+            height: 75vh;
+
+            background-color: #e5e4e0;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            overflow: hidden;
+
+        }
+
+
+        .volcano-container {
+
+            position: absolute;
+
+            bottom: 0;
+
+            width: 100%;
+
+            height: 100%;
+
+            z-index: 1;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: flex-end;
+
+        }
+
+
+        .volcano-svg {
+
+            width: 100%;
+
+            height: 100%;
+
+        }
+
+
+        .woodcut-path {
+
+            fill: none;
+
+            stroke: #2d2d2d;
+
+            stroke-width: 1.5;
+
+        }
+
+
+        .lava-woodcut {
+
+            fill: #c63527;
+
+        }
+
+
+        .mountain-body {
+
+            fill: #1a1a1a;
+
+        }
+
+
+        .lava-flow {
+
+            animation: lavaGlow 4s ease-in-out infinite;
+
+        }
+
+
+        @keyframes lavaGlow {
+
+            0%, 100% { fill: #871908; }
+
+            50% { fill: #c63527; }
+
+        }
+
+
+        .hero-overlay {
+
+            position: absolute;
+
+            top: 0; left: 0; width: 100%; height: 100%;
+
+            background: rgba(0, 0, 0, 0.05);
+
+            z-index: 2;
+
+        }
+
+
+        .ash-particles {
+
+            position: absolute;
+
+            top: 0; left: 0; width: 100%; height: 100%;
+
+            z-index: 3;
+
+            overflow: hidden;
+
+            pointer-events: none;
+
+        }
+
+
+        .ash-particles span {
+
+            position: absolute;
+
+            display: block;
+
+            width: 3px;
+
+            height: 3px;
+
+            background: rgba(0, 0, 0, 0.2);
+
+            border-radius: 50%;
+
+            animation: fall linear infinite;
+
+        }
+
+
+        @keyframes fall {
+
+            0% { transform: translateY(-10vh) translateX(0); opacity: 0; }
+
+            20% { opacity: 0.5; }
+
+            100% { transform: translateY(100vh) translateX(30px); opacity: 0; }
+
+        }
+
+
+        .progress-container {
+
+            position: fixed;
+
+            top: 0;
+
+            z-index: 2000;
+
+            width: 100%;
+
+            height: 5px;
+
+            background: transparent;
+
+        }
+
+        .progress-bar {
+
+            height: 100%;
+
+            background: var(--volcanic-red);
+
+            width: 0%;
+
+        }
+
+
+        .navbar {
+
+            background: #1a1a1a;
+
+            padding: 10px 5%;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            position: sticky;
+
+            top: 0;
+
+            z-index: 1000;
+
+            border-bottom: 4px solid var(--volcanic-red);
+
+        }
+
+
+        .logo-container {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 15px;
+
+            cursor: pointer;
+
+        }
+
+
+        .logo-img {
+
+            width: 55px;
+
+            height: 55px;
+
+            border-radius: 50%;
+
+            object-fit: cover;
+
+            border: 2px solid var(--volcanic-red);
+
+            background: #333;
+
+        }
+
+
+        .logo-text {
+
+            color: white;
+
+            font-family: 'Montserrat', sans-serif;
+
+            font-weight: bold;
+
+            letter-spacing: 2px;
+
+            font-size: 1.2rem;
+
+        }
+
+
+        .nav-links {
+
+            list-style: none;
+
+            margin: 0;
+
+            padding: 0;
+
+            display: flex;
+
+            gap: 15px;
+
+            align-items: center;
+
+        }
+
+
+        .nav-links a {
+
+            color: #ccc;
+
+            text-decoration: none;
+
+            font-size: 0.75rem;
+
+            font-family: 'Montserrat', sans-serif;
+
+            text-transform: uppercase;
+
+            transition: 0.3s;
+
+            padding: 5px 10px;
+
+            cursor: pointer;
+
+        }
+
+
+        .nav-links a:hover { color: var(--volcanic-red); }
+
+
+        .theme-toggle {
+
+            background: var(--volcanic-red);
+
+            color: white;
+
+            border: none;
+
+            padding: 8px 12px;
+
+            border-radius: 50%;
+
+            cursor: pointer;
+
+            font-size: 1.1rem;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            transition: transform 0.3s ease;
+
+        }
+
+        .theme-toggle:hover { transform: scale(1.1); }
+
+
+        .page {
+
+            display: none;
+
+            animation: fadeInPage 0.5s ease-in-out;
+
+            padding: 40px 20px;
+
+            max-width: 1000px;
+
+            margin: 0 auto;
+
+        }
+
+        .page.active { display: block; }
+
+
+        @keyframes fadeInPage {
+
+            from { opacity: 0; transform: translateY(10px); }
+
+            to { opacity: 1; transform: translateY(0); }
+
+        }
+
+
+        .header-box {
+
+            position: relative;
+
+            z-index: 10;
+
+            background-color: rgba(255, 255, 255, 0.8);
+
+            color: #1a1a1a;
+
+            text-align: center;
+
+            padding: 20px 40px;
+
+            border-radius: 0;
+
+            backdrop-filter: blur(3px);
+
+            border: 2px solid #1a1a1a;
+
+            box-shadow: 5px 5px 0px #1a1a1a;
+
+        }
+
+
+        h1 { font-family: 'Montserrat', sans-serif; font-size: 3rem; margin: 0; letter-spacing: -1px; text-transform: uppercase; }
+
+        h2 { font-family: 'Montserrat', sans-serif; color: var(--volcanic-red); border-bottom: 2px solid var(--volcanic-red); padding-bottom: 10px; margin-top: 40px; }
+
+        h3 { font-family: 'Montserrat', sans-serif; color: var(--volcanic-red); margin-top: 35px; font-weight: bold; }
+
+
+        .card {
+
+            background: var(--white);
+
+            padding: 45px;
+
+            border-radius: 8px;
+
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+
+            margin-bottom: 30px;
+
+            position: relative;
+
+            z-index: 10;
+
+        }
+
+
+        .contenedor-perrito {
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            margin: 40px 0;
+
+            gap: 20px;
+
+        }
+
+
+        .pizarron {
+
+            width: 100%;
+
+            max-width: 450px;
+
+            height: 250px;
+
+            background-color: #2c3e50;
+
+            border: 12px solid #7f8c8d;
+
+            border-radius: 10px;
+
+            display: flex;
+
+            flex-direction: column;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            padding: 20px;
+
+            box-shadow: 0px 10px 20px rgba(0,0,0,0.2);
+
+            position: relative;
+
+            cursor: pointer; /* Indica que es clickeable */
+
+        }
+
+
+        #texto-pizarron {
+
+            color: #ecf0f1;
+
+            font-size: 1.1rem;
+
+            text-align: center;
+
+            font-family: 'Montserrat', sans-serif;
+
+            transition: opacity 0.2s;
+
+            margin: auto;
+
+            user-select: none; /* Evita seleccionar texto al hacer clic rápido */
+
+        }
+
+
+        .perrito-img {
+
+            width: 320px;
+
+            height: auto;
+
+            transform: scaleX(-1);
+
+            margin-left: -60px;
+
+            z-index: 5;
+
+        }
+
+
+        .grid-container {
+
+            display: grid;
+
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+
+            gap: 20px;
+
+            margin-top: 30px;
+
+        }
+
+
+        .species-card {
+
+            background-color: var(--ash-gray);
+
+            border-radius: 12px;
+
+            overflow: hidden;
+
+            position: relative;
+
+            height: 180px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            text-align: center;
+
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+
+            transition: transform 0.3s ease;
+
+            cursor: pointer;
+
+            border: 2px solid transparent;
+
+        }
+
+
+        .species-card:hover { transform: translateY(-5px); border-color: var(--volcanic-red); }
+
+        .species-name { font-weight: bold; font-family: 'Montserrat', sans-serif; font-size: 1rem; color: var(--volcanic-red); padding: 15px; }
+
+
+        .overlay {
+
+            position: absolute;
+
+            top: 0; left: 0; width: 100%; height: 100%;
+
+            background-color: rgba(45, 45, 45, 0.95);
+
+            color: white; display: flex; align-items: center; justify-content: center;
+
+            padding: 20px; opacity: 0; transition: opacity 0.4s ease; font-size: 0.85rem;
+
+            text-align: center;
+
+        }
+
+        .species-card:hover .overlay { opacity: 1; }
+
+
+        #map { height: 450px; width: 100%; border-radius: 8px; border: 2px solid var(--volcanic-red); margin: 25px 0; z-index: 1; }
+
+
+        .math-block {
+
+            background: #2d2d2d; color: #00ffcc; padding: 25px; border-radius: 5px;
+
+            font-family: 'Courier New', monospace; margin: 25px 0; overflow-x: auto;
+
+            border-left: 6px solid var(--volcanic-red);
+
+        }
+
+
+        footer { text-align: center; padding: 40px; font-size: 0.8rem; color: #aaa; background: #1a1a1a; margin-top: 50px; }
+
+        strong { color: var(--volcanic-red); }
+
+
+        .chart-visual-wrapper {
+
+            background: white;
+
+            padding: 25px;
+
+            border-radius: 12px;
+
+            border: 1px solid #ddd;
+
+            margin-top: 30px;
+
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+
+        }
+
+        .chart-legend-box {
+
+            display: flex;
+
+            justify-content: center;
+
+            flex-wrap: wrap;
+
+            gap: 20px;
+
+            margin-top: 20px;
+
+            font-family: 'Montserrat', sans-serif;
+
+            font-size: 0.9rem;
+
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+
+        .dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+
+
+        .explicacion-variables {
+
+            margin-top: 30px;
+
+            background: var(--ash-gray);
+
+            padding: 25px;
+
+            border-radius: 8px;
+
+            border-left: 5px solid var(--volcanic-red);
+
+        }
+
+        .var-name { font-weight: bold; color: var(--volcanic-red); font-family: 'Montserrat', sans-serif; }
+
+
+        @media (max-width: 768px) {
+
+            .nav-links { display: none; }
+
+            .perrito-img { width: 200px; margin-left: 0; }
+
+            .contenedor-perrito { flex-direction: column; }
+
+            h1 { font-size: 2rem; }
+
+        }
+
+    </style>
+
+</head>
+
+<body data-theme="light">
+
+
+    <div class="progress-container">
+
+        <div class="progress-bar" id="myBar"></div>
+
+    </div>
+
+
+    <nav class="navbar">
+
+        <div class="logo-container" onclick="showPage('inicio')">
+
+            <img src="img/logovolcan-removebg-preview.png" alt="Pibb Logo" class="logo-img">
+
+            <span class="logo-text">PIBB ERUPTION</span>
+
+        </div>
+
+        <ul class="nav-links">
+
+    <li><a onclick="showPage('inicio')">Inicio</a></li>
+
+    <li><a onclick="showPage('cap1')">Art. 1</a></li>
+
+    <li><a onclick="showPage('cap2')">Art. 2</a></li>
+
+    <li><a onclick="showPage('cap3')">Art. 3</a></li>
+
+    <li><a onclick="showPage('cap4')">Art. 4</a></li>
+
+    <li><a onclick="showPage('cap5')">Art. 5</a></li>
+
+    <li><a onclick="showPage('articles')">Section</a></li> <li><a onclick="showPage('game')">PIBB-GAME</a></li>
+
+    <li><a onclick="showPage('fuentes')">Bibliografía</a></li>
+
+    <li><button class="theme-toggle" id="theme-btn" onclick="toggleTheme()">☀️</button></li>
+
+</ul>
+
+    </nav>
+
+
+ <div id="inicio" class="page active" style="max-width: 100%; padding: 0;">
+
+        <div class="hero-background" style="height: 50vh;"> <div class="hero-overlay"></div>
+
+            <div class="volcano-container">
+
+                <img src="img/fondo news (1).png" alt="Pibble News" style="width: 100%; height: 100%; object-fit: cover;">
+
+            </div>
+
+            <div class="ash-particles" id="ash-container"></div>
+
+            <div class="header-box">
+
+                <h1>Pibb Eruption</h1>
+
+                <p>Proyecto de investigación | 2026</p>
+
+            </div>
+
+        </div>
+
+
+        <div style="max-width: 1000px; margin: 20px auto; position: relative; padding: 0 20px;">
+
+            <div class="card">
+
+                <h2>Bienvenidos</h2>
+
+                <p>Bienvenido a esta página informativa, donde exploramos el impacto de los volcanes desde una perspectiva integral que une ciencia, salud, sociedad y ética ambiental.</p>
+
+                <div class="english-box">
+
+                    <h2>Welcome</h2>
+
+                    <p class="english-text">Welcome to this informative website, where we explore the impact of volcanoes from a perspective that combines science, health, society, and environmental ethics.</p>
+
+                </div>
+
+            </div>
+
+      
+
+              </script>
+</div>
+</div>
+</div>
+
+ <!-- ===================== CAP 1 ===================== -->
+    <div id="cap1" class="page">
+        <div class="marca-body-container">
+            <div class="marca-header-sim">
+                <div class="marca-tag-logo">Artículo I</div>
+                <div class="marca-section-title">Procesos naturales | Pibb-Ecología</div>
+            </div>
+            <div class="ad-space-top">
+                <img src="img/elotes.png" alt="Anuncio Pibb Eruption"
+                    style="width: 100%; height: auto; max-width: 970px; display: block; margin: 0 auto;">
+            </div>
+            <div class="marca-layout-grid">
+                <main>
+                    <div class="news-header">
+                        <h1 class="news-title">Ecología de la erupción</h1>
+                        <div class="news-subtitle">Explicación de los procesos volcánicos y sus consecuencias en la
+                            población.</div>
+                        <div class="news-meta">Por <b>Pibble Eruption</b> | Proyecto de investigación</div>
+                    </div>
+
+                    <div
+                        style="padding: 20px; font-family: Arial, sans-serif; font-size: 1.05rem; line-height: 1.6; color: #222;">
+                        <h3
+                            style="font-family: 'Arial Black', sans-serif; font-size: 1.3rem; text-transform: uppercase;">
+                            1.1 Formación de los volcanes</h3>
+                        <p style="font-size: 1.15rem; text-align: justify;">Un <strong>volcán</strong> es una
+                            discontinuidad geológica que conecta directamente la corteza terrestre con una cámara
+                            magmática profunda, eyectando magma, gases y fluidos a temperaturas extremas.</p>
+                        <p style="font-size: 1.15rem;">Su nacimiento se resume en tres dinámicas importantes:</p>
+                        <ul style="font-size: 1.1rem; padding-left: 15px; margin-bottom: 25px; text-align: justify;">
+                            <li><strong>Subducción:</strong> Choque y fusión de placas tectónicas.</li>
+                            <li><strong>Límites divergentes:</strong> Separación que libera magma en corteza nueva.</li>
+                            <li><strong>Puntos calientes:</strong> Columnas de magma profundo aisladas de los bordes.
+                            </li>
+                        </ul>
+
+                        <div style="margin: 25px 0; background: #f4f4f4; border: 1px solid #ddd; padding: 5px;">
+                            <div style="width: 100%; display: flex; align-items: center; justify-content: center;">
+                                <img src="img/papu.png" alt="Gráfico explicativo de la estructura de un volcán"
+                                    style="max-width: 100%; display: block;">
+                            </div>
+                        </div>
+
+                        <p style="font-size: 1.15rem; text-align: justify;">En México, la subducción de las placas de
+                            <strong>Cocos</strong> y <strong>Rivera</strong> bajo la <strong>Norteamericana</strong>
+                            activa el <strong>Eje Volcánico Transversal</strong>, dando vida a colosos como el
+                            <em>Popocatépetl</em>, <em>Iztaccíhuatl</em> y el <em>Volcán de Colima</em>.
+                        </p>
+                        <p style="font-size: 1.15rem; text-align: justify;">Zonas densas como <strong>Puebla</strong>
+                            sufren la deposición de ceniza. Este material piroclástico contiene <strong>sílice
+                                cristalina libre</strong>, un componente altamente abrasivo y citotóxico perjudicial
+                            para el tejido pulmonar.</p>
+
+                        <h3
+                            style="font-family: 'Open Sans', 'Segoe UI', Arial, sans-serif; font-size: 1.45rem; font-weight: bold; color: #950F0F; margin-bottom: 15px;">
+                            Conoce la ubicación de los volcanes con más presencia en México.</h3>
+                        <div
+                            style="background: #fdfdfd; padding: 12px 16px; border-left: 4px solid #950F0F; border-top: 1px solid #e5e5e5; border-right: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5; border-radius: 0 4px 4px 0; margin-bottom: 20px; font-size: 0.85rem; font-family: 'Open Sans', Arial, sans-serif; color: #4a4a4a;">
+                            <strong style="color:#950F0F; font-weight: 700;">Mapa interactivo:</strong> Ubicación y fase
+                            de algunos volcanes del Cinturón Volcánico Mexicano.
+                        </div>
+                        <div id="map"
+                            style="background: #eee; height: 220px; border: 1px solid #ddd; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); margin-bottom: 30px;">
+                        </div>
+
+                        <div
+                            style="background: #fdf6f6; border-left: 5px solid #950F0F; padding: 15px; margin: 25px 0; display: flex; align-items: center; gap: 15px;">
+                            <div class="cuadro-bienvenida"
+                                style="background: #e6f2ff; border: 2px dashed #2b5329; border-radius: 6px; padding: 10px; margin-bottom: 15px; display: inline-block;">
+                                <h3
+                                    style="margin: 0; color: #2b5329; font-family: 'Comic Sans MS', cursive, sans-serif; font-size: 1.2rem; text-align: center;">
+                                    ¡Bienvenido a la Pibb-Clase :)!</h3>
+                            </div>
+                        </div>
+
+                        <div class="pizarron" onclick="cambiarTextoPerrito(1)"
+                            style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; min-height: 80px; background: #2b5329; border: 4px solid #8B5A2B; border-radius: 6px; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); padding: 10px;">
+                            <p id="texto-pizarron"
+                                style="font-size: 1.1rem; color: #ffffff; margin: 0; font-weight: bold; text-align: center; font-family: 'Comic Sans MS', cursive, sans-serif; line-height: 1.4;">
+                                ¡Hola! Soy el profesor Pibb. Haz clic aquí o usa las flechas del teclado para avanzar o
+                                retroceder.
+                            </p>
+                        </div>
+                        <img src="img/PIBBLEPROFE-removebg-preview.png" alt="Perrito profesor" class="perrito-img"
+                            style="max-height: 180px; width: auto;">
+
+                        <div class="expandable-container" style="margin: 25px 0;">
+                            <div class="expand-card">
+                                <div class="expand-header" onclick="toggleCard(this)">Vínculo clima-volcanes <span
+                                        class="icon-arrow">▼</span></div>
+                                <div class="expand-content">
+                                    <p style="margin: 0; text-align: justify;">Investigaciones geológicas sugieren que
+                                        el <strong>cambio climático antropogénico</strong> puede influir en la
+                                        frecuencia de las erupciones. El derretimiento de glaciares masivos en regiones
+                                        volcánicas provoca una "descarga isostática": al desaparecer el peso del hielo,
+                                        la corteza terrestre experimenta un rebote que reduce la presión litostática
+                                        sobre las cámaras magmáticas, facilitando potencialmente el ascenso del magma y
+                                        la liberación de gases volátiles. En México, este fenómeno es vigilado en
+                                        glaciares remanentes de volcanes como el Iztaccíhuatl y el Pico de Orizaba.</p>
+                                </div>
+                            </div>
+                            <div class="expand-card">
+                                <div class="expand-header" onclick="toggleCard(this)">Riesgos en zonas montañosas <span
+                                        class="icon-arrow">▼</span></div>
+                                <div class="expand-content">
+                                    <p style="margin: 0; text-align: justify;">El principal peligro en áreas montañosas
+                                        post-erupción son los <strong>lahares</strong>. El calentamiento global
+                                        intensifica los eventos de precipitación extrema; cuando estas lluvias
+                                        interactúan con los depósitos de piroclastos y ceniza inestable en las laderas,
+                                        se generan flujos de lodo de alta densidad. Estos pueden viajar a decenas de
+                                        kilómetros por hora, arrasando infraestructura y ecosistemas río abajo. La
+                                        deforestación en las faldas de los volcanes agrava este riesgo al eliminar la
+                                        barrera mecánica natural que ofrecen las raíces de los árboles.</p>
+                                </div>
+                            </div>
+                            <div class="expand-card">
+                                <div class="expand-header" onclick="toggleCard(this)">Dilema ético global <span
+                                        class="icon-arrow">▼</span></div>
+                                <div class="expand-content">
+                                    <p style="margin: 0; text-align: justify;">La intersección entre vulcanismo y crisis
+                                        climática plantea un conflicto ético-ambiental. Mientras que las naciones
+                                        industrializadas son los principales responsables de las emisiones que alteran
+                                        los ciclos térmicos y el deshielo glaciar, las consecuencias de los riesgos
+                                        geológicos intensificados (como lahares o desplazamientos) suelen afectar a
+                                        comunidades rurales y pueblos indígenas con menor resiliencia económica. ¿Es
+                                        ético que los más vulnerables paguen el costo de un desequilibrio geoclimático
+                                        que no provocaron?</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h3 style="text-align: center; font-family: 'Arial Black', sans-serif; font-size: 1.6rem; margin-top: 40px; text-transform: uppercase;">
+                    Consecuencias en la salud pública
+                </h3>
+                <p style="text-align: center; color: #950F0F; font-size: 0.95rem; margin-bottom: 25px; font-weight: bold;">
+                    Pasa el cursor sobre cada sistema para explorar los riesgos detallados.
+                </p>
+
+               <style>
+    .health-explorer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 30px; }
+    .health-node { background: #fff; border: 1px solid rgba(0,0,0,0.1); border-radius: 15px; padding: 20px; position: relative; transition: all 0.3s ease; min-height: 150px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
+    /* SE CAMBIÓ EL COLOR DE FONDO A ROJO (#950F0F) AL PASAR EL CURSOR */
+    .health-node:hover { transform: translateY(-5px); background: #950F0F; border-color: #950F0F; box-shadow: 0 10px 25px rgba(149, 15, 15, 0.4); }
+    .health-node .icon-bg { position: absolute; top: -10px; right: -10px; font-size: 5rem; opacity: 0.05; transition: 0.3s; }
+    .health-node:hover .icon-bg { opacity: 0.2; transform: scale(1.1); color: white; }
+    .health-node h4 { margin: 0 0 8px 0; color: #950F0F; font-family: 'Arial Black', sans-serif; font-size: 1.1rem; text-transform: uppercase; z-index: 1; transition: color 0.3s; }
+    .health-node p { font-size: 0.85rem; margin: 0; color: #444; z-index: 1; transition: color 0.3s; }
+    .health-node .technical-detail { font-size: 0.75rem; font-weight: bold; color: white; background: #950F0F; padding: 2px 5px; display: inline-block; margin-top: 10px; opacity: 0; transform: translateY(5px); transition: all 0.3s; z-index: 1; }
+    /* SE ASEGURA QUE EL TÍTULO CAMBIE A BLANCO PARA MANTENER LA LEGIBILIDAD */
+    .health-node:hover h4 { color: #fff; }
+    .health-node:hover p { color: #fff; }
+    .health-node:hover .technical-detail { opacity: 1; transform: translateY(0); background: rgba(0, 0, 0, 0.3); }
+<</style>
+                <div class="health-explorer-grid">
+                    <div class="health-node">
+                        <div class="icon-bg">🫁</div>
+                        <h4>Toxicidad alveolar</h4>
+                        <p>La sílice cristalina causa micro-laceraciones en alvéolos, exacerbando asma y bronquitis.</p>
+                        <div class="technical-detail">Riesgo: Silicosis y EPOC</div>
+                    </div>
+                    <div class="health-node">
+                        <div class="icon-bg">❤️</div>
+                        <h4>Estrés cardiovascular</h4>
+                        <p>Partículas PM2.5 entran al flujo sanguíneo aumentando el riesgo de arritmias e infartos.</p>
+                        <div class="technical-detail">Riesgo: Eventos isquémicos</div>
+                    </div>
+                    <div class="health-node">
+                        <div class="icon-bg">👁️</div>
+                        <h4>Abrasión de córnea</h4>
+                        <p>Ceniza vítrea provoca conjuntivitis aguda y úlceras. Evite lentes de contacto.</p>
+                        <div class="technical-detail">Riesgo: Daño epitelial</div>
+                    </div>
+                    <div class="health-node">
+                        <div class="icon-bg">🧴</div>
+                        <h4>Corrosión epitelial</h4>
+                        <p>La ceniza ácida mezclada con sudor produce prurito, eritema y resequedad cutánea extrema.</p>
+                        <div class="technical-detail">Riesgo: Dermatitis</div>
+                    </div>
+                    <div class="health-node">
+                        <div class="icon-bg">💧</div>
+                        <h4>Contaminación hidrológica</h4>
+                        <p>Metales pesados lixiviados (arsénico, flúor) causan daños al esmalte e intoxicaciones.</p>
+                        <div class="technical-detail">Riesgo: Fluorosis y toxicosis</div>
+                    </div>
+                    <div class="health-node">
+                        <div class="icon-bg">🧠</div>
+                        <h4>Neuropsicología</h4>
+                        <p>El confinamiento prolongado y el estado de alerta elevan el cortisol y detonan ansiedad.</p>
+                        <div class="technical-detail">Riesgo: Estrés postraumático</div>
+                    </div>
+                </div>
+
+                <div class="medidas-preventivas-card" style="padding: 20px; background: #f8f9fa; color: #333; border-top: 4px solid #950F0F; border-left: 1px solid #eee; border-right: 1px solid #eee; border-bottom: 1px solid #eee; margin-bottom: 30px; border-radius: 0 0 4px 4px; display: flex; align-items: center;">
+<div style="flex: 0 0 auto; margin-right: 20px; text-align: center;">
+<img src="img/Contagio-removebg-preview.png" alt="Mascota con máscara y gafas" style="max-height: 220px; max-width: 220px; display: block; margin: 0 auto; filter: contrast(1.1) brightness(1.1);">
+</div>
+<div style="flex: 1 1 auto;">
+<h4 style="font-family: 'Arial Black', sans-serif; margin-top: 0; color: #950F0F; text-transform: uppercase; font-size: 1.1rem; margin-bottom: 10px;">
+Protocolo rápido ante caída de ceniza
+</h4>
+<ul style="font-size: 0.9rem; line-height: 1.6; margin: 0; padding-left: 15px; color: #444;">
+<li>Uso de mascarillas de alta eficiencia (N95).</li>
+<li>Gafas protectoras en vez de lentes de contacto.</li>
+<li>Sellar rendijas con paños húmedos.</li>
+<li>Humedecer ceniza antes de barrerla.</li>
+</ul>
+</div>
+</div>
+
+                        <h3
+                            style="font-family: 'Arial Black', sans-serif; font-size: 1.3rem; text-transform: uppercase; margin-bottom: 0;">
+                            1.3 Sucesión ecológica primaria</h3>
+                        <div style="float: right; width: 100px; margin-left: 15px; text-align: center;">
+                            <img src="img/Frederic-removebg-preview.png"
+                                alt="Representación ilustrativa de Frederic Clements"
+                                style="width: 100%; height: auto; display: block; transform: scale(1.4); margin: 20px auto;">
+                            <span
+                                style="font-size: 0.8rem; font-family: 'Arial', sans-serif; color: #333; display: block; margin-top: 5px;">Frederic
+                                Clements</span>
+                        </div>
+                        <p style="margin-top: 5px; font-size: 1.15rem; text-align: justify;">Es la cadena de relevos
+                            biológicos (propuesta por <strong>Frederic Clements</strong>) donde especies pioneras
+                            degradan la roca de lava, creando suelo fértil para el regreso del ecosistema clímax.</p>
+                        <div style="clear: both;"></div>
+
+                        <div class="grid-container" id="grid-especies" style="margin-bottom: 30px;"></div>
+
+                        <h3
+                            style="font-family: 'Arial Black', sans-serif; font-size: 1.3rem; text-transform: uppercase; margin-top: 50px;">
+                            1.4 Dinámica de población y nutrientes</h3>
+                        <p style="font-size: 1.15rem; color: #222; margin-bottom: 20px; text-align: justify;">El
+                            siguiente modelo gráfico representa cómo se recupera un ecosistema tras una erupción a lo
+                            largo de un siglo.</p>
+
+                        <div class="chart-visual-wrapper"
+                            style="border: 1px solid #eee; padding: 25px 15px; background: #fff; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                            <h4
+                                style="text-align: center; font-family: 'Arial Black', sans-serif; font-size: 1.05rem; color: #950F0F; margin-top: 0; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                Sucesión ecológica y ciclo de nitrógeno (100 Años)</h4>
+                            <div style="height: 280px; margin-bottom: 15px;">
+                                <canvas id="canvasSuccession"></canvas>
+                            </div>
+                            <div class="chart-legend-box"
+                                style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; font-size: 0.85rem; font-family: Arial, sans-serif; border-top: 1px solid #eee; padding-top: 15px;">
+                                <div style="display: flex; align-items: center; gap: 6px;"><span
+                                        style="display: inline-block; width: 10px; height: 10px; background: #3498db; border-radius: 50%;"></span>
+                                    Especies pioneras</div>
+                                <div style="display: flex; align-items: center; gap: 6px;"><span
+                                        style="display: inline-block; width: 10px; height: 10px; background: #27ae60; border-radius: 50%;"></span>
+                                    Especies nuevas (Tardías)</div>
+                                <div
+                                    style="display: flex; align-items: center; gap: 12px; height: 0; border-top: 2px dashed #e74c3c;">
+                                </div>
+                                <span>Concentración de nitrógeno</span>
+                            </div>
+                        </div>
+
+                        <div class="explicacion-variables"
+                            style="background: #fafafa; padding: 25px 20px; font-size: 0.95rem; border: 1px solid #eee; border-radius: 8px; margin-bottom: 25px;">
+                            <h3
+                                style="font-family: 'Arial Black', sans-serif; font-size: 1.1rem; color: #000; margin-top: 0; margin-bottom: 15px; text-transform: uppercase;">
+                                Interpretación del modelo</h3>
+                            <p style="margin: 0 0 20px 0; color: #444; font-size: 1.15rem;">Para entender la gráfica,
+                                utilizamos la <strong>ecuación logística</strong> de crecimiento poblacional:</p>
+                            <div class="math-block"
+                                style="text-align: center; font-size: 1.2rem; margin-bottom: 20px; font-weight: bold; color: #000; background: #fff; padding: 10px; border-radius: 4px; border: 1px solid #eaeaea;">
+                                $$\frac{dT}{dt} = r \cdot T \cdot \left( 1 - \frac{T}{P} \right)$$
+                            </div>
+                            <ul class="var-list" style="font-size: 1.15rem; text-align: justify;">
+                                <li><strong>dT/dt:</strong> Representa la <strong>tasa de cambio</strong> de la
+                                    población (qué tan rápido crece el bosque).</li>
+                                <li><strong>r (Tasa de crecimiento):</strong> Es la velocidad intrínseca de
+                                    reproducción. Las pioneras (línea azul) tienen un <strong>r</strong> alto para
+                                    colonizar rápido.</li>
+                                <li><strong>P (Capacidad de carga):</strong> Es el límite máximo de vida que el suelo
+                                    puede sostener. Al principio es bajo, pero aumenta conforme hay más nitrógeno.</li>
+                                <li><strong>Curva azul (Pioneras):</strong> Crecen rápido al inicio (años 0-30) porque
+                                    no tienen competencia, pero mueren cuando los árboles grandes les quitan la luz.
+                                </li>
+                                <li><strong>Curva verde (Nuevas especies):</strong> Crecen lento pero constante.
+                                    Representan la estabilidad del ecosistema final.</li>
+                                <li><strong>Línea roja (Nitrógeno):</strong> Indica la calidad del suelo. Sin nitrógeno
+                                    (fijado primero por las pioneras), los grandes árboles no podrían existir.</li>
+                            </ul>
+                        </div>
+
+                        <div style="margin: 25px 0; background: #f4f4f4; border: 1px solid #ddd; padding: 5px;">
+                            <img src="img/liquenes.jpg" alt="Líquenes colonizando campos de lava sólida"
+                                style="max-width: 100%; display: block;">
+                            <p style="margin-top: 10px; padding: 0 5px; font-size: 0.9rem;">Líquenes colonizando campos
+                                de lava sólida.</p>
+                        </div>
+
+                        <div style="margin-top: 30px; display: flex; align-items: center; gap: 20px;">
+                            <div
+                                style="flex: 1; padding: 25px; background: linear-gradient(135deg, #f4eccf 0%, #e7d7b5 100%); border: 1px solid #d2b48c; box-shadow: inset 0 0 15px rgba(0,0,0,0.1); border-radius: 8px;">
+                                <p
+                                    style="font-family: Georgia, serif; font-size: 1.3rem; font-weight: bold; color: #950F0F; margin: 0 0 10px 0; font-style: italic;">
+                                    "En el cambio encontramos propósito"</p>
+                                <p
+                                    style="font-family: Georgia, serif; font-size: 0.95rem; color: #3e2723; margin: 0; line-height: 1.6; font-weight: normal;">
+                                    <strong style="color: #000; font-size: 1rem;">Significado:</strong> Tal como el
+                                    ecosistema se transforma tras la erupción, el cambio no es destrucción, sino una
+                                    redistribución de energía. En la naturaleza, la ceniza se vuelve nutritiva; en la
+                                    vida, los retos se vuelven propósito.
+                                </p>
+                            </div>
+                            <img src="img/Gemini_Generated_Image_omfr9nomfr9nomfr-removebg-preview.png"
+                                alt="Perrito Filósofo" style="width: 220px; height: auto; flex-shrink: 0;">
+                        </div>
+
+                         <h3 style="font-family: 'Arial Black', sans-serif; font-size: 1.4rem; text-transform: uppercase; margin-top: 0; margin-bottom: 10px; color: #000;">
+
+                        Mecánica del enfriamiento global
+
+                    </h3>
+
+                    <p style="font-size: 0.95rem; color: #666; margin-bottom: 25px;">
+
+                       <p style="font-size: 1.15rem;">A diferencia del calentamiento por <strong>CO<sub>2</sub></strong>, los volcanes pueden enfriar el planeta temporalmente mediante el "Efecto espejo" estratosférico.</p>
+
+                    </p>
+
+                   
+
+                    <div class="mecanica-container">
+
+                       
+
+                        <div class="fase-item">
+
+                            <div class="fase-num">01</div>
+
+                            <div class="fase-icon"></div>
+
+                            <h4>Inyección</h4>
+
+                           <p style="font-size: 1.15rem;">El volcán lanza <strong>SO<sub>2</sub></strong> a la estratosfera, superando el ciclo del clima común.</p>
+
+                        </div>
+
+                       
+
+                        <div class="fase-item">
+
+                            <div class="fase-num">02</div>
+
+                            <div class="fase-icon"></div>
+
+                            <h4>Conversión</h4>
+
+                          <p style="font-size: 1.15rem;">Reacción química: <br> <strong>SO<sub>2</sub> + H<sub>2</sub>O &rarr; H<sub>2</sub>SO<sub>4</sub></strong> <br> se crean aerosoles de ácido sulfúrico.</p>
+
+                        </div>
+
+                       
+
+                        <div class="fase-item">
+
+                            <div class="fase-num">03</div>
+
+                            <div class="fase-icon"></div>
+
+                            <h4>Albedo</h4>
+
+                            <p style="font-size: 1.15rem;">Los aerosoles reflejan la radiación solar hacia el espacio. El suelo no se calienta.</p>
+
+                        </div>
+
+                       
+
+                        <div class="fase-item">
+
+                            <div class="fase-num">04</div>
+
+                            <div class="fase-icon"></div>
+
+                            <h4>Disipación</h4>
+
+                            <p style="font-size: 1.15rem;">La gravedad limpia el aire en 2 años. El <strong>CO<sub>2</sub></strong> residual retoma el calentamiento.</p>
+
+                        </div>
+
+                       
+
+                    </div>
+   
+
+                </div>
+
+
+
+                <style>
+
+                    .mecanica-container {
+
+                        display: grid;
+
+                        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+
+                        gap: 20px;
+
+                        margin-top: 20px;
+
+                    }
+
+                    .fase-item {
+
+                        background: #f9f9f9;
+
+                        padding: 25px 20px;
+
+                        border-radius: 12px;
+
+                        text-align: center;
+
+                        position: relative;
+
+                        border: 1px solid rgba(0,0,0,0.05);
+
+                        transition: all 0.3s ease;
+
+                    }
+
+                    .fase-item:hover {
+
+                        transform: translateY(-5px);
+
+                        border-color: #950F0F;
+
+                        background: #fff;
+
+                        box-shadow: 0 10px 20px rgba(149, 15, 15, 0.1);
+
+                    }
+
+                    .fase-num {
+
+                        position: absolute;
+
+                        top: 10px;
+
+                        left: 15px;
+
+                        font-family: Arial, sans-serif;
+
+                        font-weight: bold;
+
+                        color: #950F0F;
+
+                        opacity: 0.2;
+
+                        font-size: 1.2rem;
+
+                    }
+
+                    .fase-icon {
+
+                        font-size: 2.5rem;
+
+                        margin-bottom: 12px;
+
+                    }
+
+                    .fase-item h4 {
+
+                        color: #950F0F;
+
+                        font-family: 'Arial Black', sans-serif;
+
+                        margin: 10px 0;
+
+                        font-size: 1.05rem;
+
+                        text-transform: uppercase;
+
+                        letter-spacing: 0.5px;
+
+                    }
+
+                    .fase-item p {
+
+                        font-size: 0.85rem;
+
+                        line-height: 1.5;
+
+                        color: #444;
+
+                        margin: 0;
+
+                    }
+
+                </style>
+
+</style>
+
+</main> <!-- cierre main -->
+<aside class="marca-aside-ads" style="position: sticky; top: 15px;">
+                <div class="sidebar-title-press" style="font-weight: bold; border-bottom: 2px solid #950F0F; padding-bottom: 5px; font-size: 1.1rem; font-family: sans-serif;">Publicidad</div>
+
+<div class="ad-space-sidebar" style="margin-top: 10px; width: 100%; max-width: 300px; box-sizing: border-box; text-align: center;">
+   
+    <img src="img/anunciofeo7.png" alt="Anuncio publicitario" style="width: 100%; height: auto; max-height: 250px; object-fit: contain; display: block; border: 1px solid #ddd; border-radius: 4px; background-color: #fff;">
+   
+</div>
+
+
+
+                <aside class="marca-aside-ads" style="position: sticky; top: 15px;">
+                                        <div class="ad-space-sidebar"
+                        style="margin-top: 10px; width: 100%; max-width: 300px; box-sizing: border-box; text-align: center;">
+                        <img src="img/anunciofeo5.png" alt="Anuncio publicitario"
+                            style="width: 100%; height: auto; max-height: 250px; object-fit: contain; display: block; border: 1px solid #ddd; border-radius: 4px; background-color: #fff;">
+                    </div>
+                    <div class="sidebar-title-press">Sección interactiva</div>
+                    <div
+                        style="background: #fff; padding: 8px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.03); margin-bottom: 20px;">
+                        <div
+                            style="position: relative; padding-bottom: 177.78%; height: 0; overflow: hidden; background: #000;">
+                            <video controls
+                                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;">
+                                <source src="img/of.mp4" type="video/mp4">
+                                Tu navegador no admite la reproducción de este video.
+                            </video>
+                        </div>
+                        <div
+                            style="font-size: 0.8rem; color: #555; margin-top: 8px; text-align: center; font-weight: 500;">
+                            ¿Por qué la gente vive cerca de volcanes activos?</div>
+                    </div>
+                    <div class="sidebar-title-press">Las más leídas</div>
+                    <div class="trending-press-row"><span class="trending-press-num">1.</span> Pérdida de bosques del
+                        siglo XX y la amenaza del Popocatépetl.</div>
+                    <div class="trending-press-row"><span class="trending-press-num">2.</span> Sílice cristalina y el
+                        desarrollo crónico de la silicosis.</div>
+                </aside>
+            </div>
+        </div>
+    </div>
+
+    
+
+
+  <div id="cap2" class="page">
+    <style>
+        /* ==========================================
+           SISTEMA DE ESTILOS UNIFICADO (BASE CAP 3)
+           ========================================== */
+        .marca-body-container {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f4f4;
+            color: #111;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+
+        /* Encabezado / Identidad de Sección */
+        .marca-header-sim {
+            display: flex;
+            align-items: center;
+            background: #fff;
+            border-bottom: 4px solid #950F0F;
+            padding: 12px 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        }
+        .marca-tag-logo {
+            background-color: #950F0F;
+            color: #fff;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: 1.8rem;
+            padding: 4px 14px;
+            letter-spacing: -1px;
+            text-transform: uppercase;
+            margin-right: 15px;
+            display: inline-block;
+        }
+        .marca-section-title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #950F0F;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Contenedores de Publicidad Optimizado */
+        .ad-space-sidebar {
+            width: 300px;
+            background: #e8e8e8;
+            border: 1px dashed #bbb;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        /* Maquetación de dos columnas (Contenido 70% + Sidebar 30%) */
+        .marca-layout-grid {
+            display: grid;
+            grid-template-columns: 7fr 3fr;
+            gap: 30px;
+            margin-top: 20px;
+            align-items: start;
+        }
+        @media (max-width: 950px) {
+            .marca-layout-grid { grid-template-columns: 1fr; }
+            .marca-aside-ads { display: flex; flex-direction: column; align-items: center; }
+        }
+
+        /* Cabecera del Artículo */
+        .news-header { margin-bottom: 25px; }
+        .news-title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: 2.3rem;
+            line-height: 1.1;
+            color: #000;
+            margin: 12px 0;
+            letter-spacing: -0.5px;
+        }
+        .news-subtitle {
+            font-size: 1.1rem;
+            line-height: 1.4;
+            color: #444;
+            font-weight: 400;
+            border-left: 4px solid #950F0F;
+            padding-left: 15px;
+            margin-bottom: 15px;
+        }
+        .news-meta {
+            font-size: 0.8rem;
+            color: #666;
+            border-top: 1px solid #e0e0e0;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 8px 0;
+            font-weight: 500;
+        }
+
+        /* Estilos de Texto Escaneables */
+        .news-p { font-size: 1.05rem; line-height: 1.55; color: #222; margin-bottom: 15px; text-align: justify; }
+        .news-subheading {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: #fff;
+            background: #950F0F;
+            padding: 6px 12px;
+            margin: 30px 0 15px 0;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+
+        /* Contenedores de Imágenes Periodísticas */
+        .news-image-frame { margin: 25px 0; background: #fff; border: 1px solid #ddd; padding: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .news-image-content { width: 100%; height: 340px; background: #222; display: flex; align-items: flex-end; position: relative; background-size: cover; background-position: center; }
+        .news-image-headline { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.25rem; text-transform: uppercase; color: #fff; background: rgba(0, 0, 0, 0.7); padding: 10px 15px; width: 100%; box-sizing: border-box; }
+        .news-image-caption { font-size: 0.8rem; color: #555; margin-top: 8px; font-style: italic; padding: 0 5px; border-left: 2px solid #950F0F; display: block; }
+
+        /* Módulos Especiales Destacados (Opinión / Beck) */
+        .news-opinion-card { background: #111; color: #fff; padding: 25px; border-top: 5px solid #950F0F; margin: 30px 0; }
+        .opinion-text { font-size: 1.15rem; font-weight: bold; font-style: italic; line-height: 1.4; margin-bottom: 12px; }
+        .opinion-signature { font-size: 0.8rem; color: #aaa; text-transform: uppercase; font-family: 'Montserrat'; letter-spacing: 0.5px; }
+
+        /* ==========================================
+           ADAPTACIÓN DE COMPONENTES INTERNOS CAP 2
+           ========================================== */
+        /* Bloques de Disciplina (Pibbles integrados al estilo limpio) */
+        .discipline-press-box {
+            background: #fff;
+            border-left: 4px solid #950F0F;
+            padding: 15px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .pibble-avatar-press {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #950F0F;
+            flex-shrink: 0;
+        }
+        .discipline-info-text { font-size: 0.9rem; line-height: 1.4; color: #333; }
+
+        /* Tablas adaptadas a la paleta del periódico */
+        .press-data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.9rem;
+            background: #fff;
+        }
+        .press-data-table th {
+            background: #111;
+            color: #fff;
+            font-family: 'Montserrat', sans-serif;
+            text-transform: uppercase;
+            font-weight: 700;
+            padding: 10px 12px;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+        .press-data-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            color: #222;
+        }
+        .press-data-table tr:hover { background: #f9f9f9; }
+
+        /* Tabla Sabías Que - Periódico */
+        .sabias-que-press {
+            width: 100%;
+            border: 1px solid #111;
+            margin: 25px 0;
+            background: #fff;
+            border-collapse: collapse;
+        }
+        .sabias-que-press th {
+            background: #950F0F;
+            color: #fff;
+            font-family: 'Montserrat', sans-serif;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            text-align: left;
+        }
+
+        /* Hitos / Tarjetas de Comunidades Premium estilo Periódico */
+        .hitos-press-vertical { display: flex; flex-direction: column; gap: 20px; margin: 25px 0; }
+        .hito-press-card {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+        .hito-press-img { background-size: cover; background-position: center; position: relative; min-height: 140px; }
+        .hito-press-badge {
+            position: absolute; top: 10px; left: 10px;
+            background: #950F0F; color: #fff;
+            font-family: 'Montserrat', sans-serif; font-weight: 800;
+            font-size: 0.7rem; padding: 3px 8px; text-transform: uppercase;
+        }
+        .hito-press-content { padding: 15px; display: flex; flex-direction: column; justify-content: space-between; }
+        .hito-press-title { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.1rem; margin: 0 0 8px 0; color: #000; }
+        .hito-press-text { font-size: 0.9rem; line-height: 1.4; color: #444; margin: 0 0 10px 0; text-align: justify; }
+        .hito-press-footer { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.75rem; color: #950F0F; text-transform: uppercase; }
+
+        @media (max-width: 600px) {
+            .hito-press-card { grid-template-columns: 1fr; }
+            .hito-press-img { height: 120px; }
+        }
+
+        /* Listas de barra lateral */
+        .sidebar-title-press {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: #111;
+            border-bottom: 3px solid #111;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+            margin-top: 10px;
+        }
+        .trending-press-row {
+            font-size: 0.85rem;
+            line-height: 1.3;
+            padding: 8px 0;
+            border-bottom: 1px solid #ddd;
+            color: #333;
+        }
+        .trending-press-num { color: #950F0F; font-weight: bold; margin-right: 4px; }
+    </style>
+
+    <div class="marca-body-container">
+        <div class="marca-header-sim">
+            <div class="marca-tag-logo">Artículo II</div>
+            <div class="marca-section-title">Salud de la población | Pibb-Ciencias de la salud </div>
+        </div>
+
+        <div class="marca-layout-grid">
+           
+            <main class="news-main-content" style="background: #fff; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+               
+                <div class="news-header">
+                   
+                    <h1 class="news-title">Impactos de los desastres volcánicos en la población</h1>
+                    <div class="news-subtitle">Análisis integral sobre la dispersión de material particulado y la disrupción comunitaria de los entornos vulnerables.</div>
+                    <div class="news-meta">Por <b>Pibb Eruption</b> | Análisis de riesgos</div>
+                </div>
+
+                <p class="news-p">
+                    La ceniza volcánica es un material particulado fino con componentes como sílice cristalina, metales pesados y gases, que actúan como irritantes y abrasivos. Su dispersión en el entorno no solo afecta directamente la salud de las personas, sino que acidifica suelos, daña la vegetación y contamina acuíferos, reduciendo drásticamente la biodiversidad y la capacidad de recarga hídrica del territorio.
+                </p>
+
+               <div class="news-image-frame" style="background: #fff; border: 1px solid #ddd; padding: 10px; border-radius: 4px; margin: 0; box-sizing: border-box; width: 100%;">
+   
+    <div style="position: relative; overflow: hidden; border-radius: 2px;">
+       
+        <img src="img/emisiones.png" alt="Emisiones Atmosféricas y Afectación Ambiental" style="width: 100%; height: auto; display: block; max-height: 380px; object-fit: contain; background-color: #fff;">
+       
+       
+       
+    </div>
+   
+    <span class="news-image-caption" style="display: block; font-size: 0.85rem; color: #555; margin-top: 10px; border-left: 2px solid #950F0F; padding-left: 5px; font-family: sans-serif; line-height: 1.4;">
+       Emisiones volcánicas.
+    </span>
+
+</div>
+
+                <div class="news-subheading">Patologías y vulnerabilidad física</div>
+               
+                <p class="news-p">
+                    Según las guías internacionales, los efectos agudos más comunes de la exposición directa se manifiestan a nivel respiratorio, ocular y dérmico. En personas con condiciones preexistentes, se registra un aumento inmediato de las hospitalizaciones por sintomatologías graves.
+                </p>
+
+                <div class="discipline-press-box">
+                    <img src="img/enfermero.png" alt="Pibble Enfermero" class="pibble-avatar-press">
+                    <div class="discipline-info-text">
+                        <strong>Área de Ciencias de la Salud y Ecología:</strong> Monitoreo de riesgos agudos y crónicos respiratorios, así como del impacto ambiental documentado por el Programa de Ordenamiento Ecológico del Popocatépetl.
+                    </div>
+                </div>
+
+                <table class="sabias-que-press">
+                    <thead>
+                        <tr>
+                            <th colspan="2">¿SABÍAS QUE?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="width: 100px; text-align: center; padding: 10px; background: #fff5f5;">
+                                <img src="img/pibb_inteligente.png" alt="Pibble Inteligente" style="width: 70px; height: 70px; border-radius: 50%; border: 2px solid #950F0F; object-fit: cover;">
+                            </td>
+                            <td style="padding: 15px; font-size: 0.9rem; line-height: 1.4; color: #222; text-align: justify;">
+                                Un estudio reciente de <strong>Etchegaray-Morales (2024)</strong> en la <em>Revista Médica del IMSS</em> confirma los patrones lesivos en erupciones modernas y añade que también pueden aparecer alteraciones en tejidos profundos.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <table class="press-data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 30%;">Tipo de afectación</th>
+                            <th style="width: 70%;">Efectos clínicos y diagnósticos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="font-weight: bold; color: #950F0F;">Respiratorias</td>
+                            <td>Irritación nasal/garganta, tos seca, exacerbación de asma, bronquitis crónica, disnea y sibilancias. Exposición prolongada puede provocar silicosis.</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold; color: #950F0F;">Oculares y dérmicas</td>
+                            <td>Conjuntivitis, sensación de arenilla, lagrimeo, abrasiones corneales; dermatitis irritativa y enrojecimiento al mezclarse con sudor en pieles sensibles.</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="news-subheading">Impacto en salud mental y entornos sociales</div>
+               
+                <p class="news-p">
+                    Los desastres volcánicos provocan estrés crónico derivado de la incertidumbre económica, la pérdida de medios de vida y la disrupción de las redes sociales tradicionales:
+                </p>
+
+                <div class="discipline-press-box">
+                    <img src="img/PIBBLEPROFE-removebg-preview.png" alt="Pibble Psicología Social" class="pibble-avatar-press">
+                    <div class="discipline-info-text">
+                        <strong>Área de psicología social y comunitaria:</strong> Evaluación de síntomas de trauma, depresión y dinámicas colectivas frente a la percepción de abandono institucional.
+                    </div>
+                </div>
+
+                <div class="hitos-press-vertical">
+                   
+    <div class="hito-press-card" style="display: flex; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; background: #fff;">
+        <div class="hito-press-img" style="position: relative; width: 150px; min-width: 150px; background: #000;">
+           
+            <img src="img/morelos.png" alt="Comunidades Rurales" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+           
+            <span class="hito-press-badge" style="position: absolute; top: 10px; left: 10px; background: #950F0F; color: #fff; padding: 2px 8px; font-size: 0.75rem; font-weight: bold; border-radius: 2px;">Rural</span>
+        </div>
+        <div class="hito-press-content" style="padding: 15px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <h4 class="hito-press-title" style="margin: 0 0 8px 0; font-size: 1.1rem; color: #333; font-family: sans-serif;">Comunidades Rurales (Puebla, Morelos)</h4>
+                <p class="hito-press-text" style="margin: 0; font-size: 0.9rem; color: #666; line-height: 1.4; font-family: sans-serif;">El impacto psicológico es severo debido a la destrucción directa de cultivos, situaciones de aislamiento físico y una marcada sensación de abandono por parte de las instituciones, elevando tasas de ansiedad y estrés postraumático.</p>
+            </div>
+            <div class="hito-press-footer" style="margin-top: 10px; font-size: 0.8rem; color: #999; font-weight: bold; font-family: sans-serif;">Entorno Comunitario</div>
+        </div>
+    </div>
+
+    <div class="hito-press-card" style="display: flex; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; background: #fff;">
+        <div class="hito-press-img" style="position: relative; width: 150px; min-width: 150px; background: #000;">
+           
+            <img src="img/cdmx.png" alt="Comunidades Urbanas" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+           
+            <span class="hito-press-badge" style="position: absolute; top: 10px; left: 10px; background: #950F0F; color: #fff; padding: 2px 8px; font-size: 0.75rem; font-weight: bold; border-radius: 2px;">Urbana</span>
+        </div>
+        <div class="hito-press-content" style="padding: 15px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <h4 class="hito-press-title" style="margin: 0 0 8px 0; font-size: 1.1rem; color: #333; font-family: sans-serif;">Comunidades Urbanas (CDMX)</h4>
+                <p class="hito-press-text" style="margin: 0; font-size: 0.9rem; color: #666; line-height: 1.4; font-family: sans-serif;">El estrés se manifiesta de forma colectiva y masiva, amplificado notablemente por los medios de comunicación y las redes sociales. A diferencia del ámbito rural, existe una infraestructura con mejor acceso a apoyo psicológico.</p>
+            </div>
+            <div class="hito-press-footer" style="margin-top: 10px; font-size: 0.8rem; color: #999; font-weight: bold; font-family: sans-serif;">Entorno Metropolitano</div>
+        </div>
+    </div>
+
+    <div class="hito-press-card" style="display: flex; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; background: #fff;">
+        <div class="hito-press-img" style="position: relative; width: 150px; min-width: 150px; background: #000;">
+           
+            <img src="img/vulnerables.jfif" alt="Estudios de Vulnerabilidad" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+           
+            <span class="hito-press-badge" style="position: absolute; top: 10px; left: 10px; background: #950F0F; color: #fff; padding: 2px 8px; font-size: 0.75rem; font-weight: bold; border-radius: 2px;">Estudios</span>
+        </div>
+        <div class="hito-press-content" style="padding: 15px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <h4 class="hito-press-title" style="margin: 0 0 8px 0; font-size: 1.1rem; color: #333; font-family: sans-serif;">Poblaciones Vulnerables: Trauma Prolongado</h4>
+                <p class="hito-press-text" style="margin: 0; font-size: 0.9rem; color: #666; line-height: 1.4; font-family: sans-serif;">Investigaciones de Lainez (2024) y de la ESPM (2025) reportan incrementos en el consumo de sustancias y síntomas de trauma en niños, ancianos y mujeres. Erupciones como la de La Palma (2021) evidencian este patrón de fatiga emocional prolongada.</p>
+            </div>
+            <div class="hito-press-footer" style="margin-top: 10px; font-size: 0.8rem; color: #999; font-weight: bold; font-family: sans-serif;">ESPM / Lainez (2024-2025)</div>
+        </div>
+    </div>
+
+</div>
+                <div class="news-subheading">Modelado matemático y reflexión filosófica</div>
+
+                <div class="discipline-press-box">
+                    <img src="img/pibb_inteligente.png" alt="Pibble Filósofo" class="pibble-avatar-press">
+                    <div class="discipline-info-text">
+                        <strong>Área de epistemología y gestión del riesgo:</strong> Cuantificación probabilística de amenazas poblacionales versus el marco teórico de la modernidad reflexiva.
+                    </div>
+                </div>
+
+                <div class="news-opinion-card" style="margin: 20px auto; padding: 20px; max-width: 500px; background: linear-gradient(to right, #f5f0db, #f9f6eb, #f5f0db); border: 1px solid #dcd1a5; border-radius: 4px; box-shadow: 3px 3px 15px rgba(0,0,0,0.08), inset 0 0 20px rgba(218,202,143,0.3); text-align: center; font-style: italic;">
+   
+    <p class="opinion-text" style="font-size: 1.25rem; color: #4a3e1d; font-family: 'Lora', Georgia, serif; line-height: 1.4; margin-bottom: 12px; font-weight: bold;">
+        "Los riesgos modernos ya no son naturales puros, sino globalizados y manufacturados por la modernidad. Los modelos probabilísticos calculan lo incierto otorgando una ilusión de control, pero sin eliminar la vulnerabilidad ontológica."
+    </p>
+   
+    <p class="opinion-signature" style="font-size: 0.95rem; color: #3e2723; font-family: 'Lora', Georgia, serif; line-height: 1.5; margin-bottom: 15px; font-style: normal; text-align: justify;">
+        Esta premisa define el concepto de la <strong style="color: #950F0F;">"Sociedad del Riesgo"</strong> propuesto por el sociólogo alemán <strong>Ulrich Beck</strong> en su célebre obra publicada entre 1986 y 1998.
+    </p>
+   
+    <div style="margin-top: 15px; display: flex; justify-content: center;">
+        </div>
+
+</div>
+
+                <p class="news-p">
+                    Con el fin de estimar cuántas personas pueden verse afectadas por una amenaza volcánica, se emplean modelos matemáticos basados en aproximaciones probabilísticas y variables dinámicas:
+                </p>
+
+                <p style="font-family: 'Montserrat', sans-serif; font-weight: 900; text-align: center; font-size: 1.4rem; color: #950F0F; background-color: #f9f9f9; padding: 15px; border-top: 2px solid #111; border-bottom: 2px solid #111; margin: 20px 0; letter-spacing: 1px;">
+                    Rp = (Pe &times; D &times; Pr) &times; U
+                </p>
+
+                <p class="news-p">
+                    Donde <strong>Rp</strong> es el Riesgo Poblacional Estimado; <strong>Pe</strong> es la Población Expuesta; <strong>D</strong> representa el Factor de Dispersión de la amenaza; <strong>Pr</strong> es la Probabilidad de Ocurrencia y <strong>U</strong> el Factor de Incertidumbre. La ética contemporánea nos recuerda que estos cálculos no deben ocultar nuestra condición humana fundamental, obligándonos a una humildad ecológica y resiliencia cultural.
+                </p>
+
+                <div class="news-image-frame" style="background: #fff; border: 1px solid #ddd; padding: 10px; border-radius: 4px; margin: 0; box-sizing: border-box; width: 100%;">
+   
+    <div style="overflow: hidden; border-radius: 2px;">
+       
+        <img src="img/dispersion.png" alt="Modelos de dispersión de cenizas" style="width: 100%; height: auto; display: block; max-height: 260px; object-fit: contain; background-color: #fff;">
+       
+    </div>
+   
+    <span class="news-image-caption" style="display: block; font-size: 0.85rem; color: #555; margin-top: 10px; border-left: 2px solid #950F0F; padding-left: 5px; font-family: sans-serif; line-height: 1.4;">
+        Modelo de dispersión.
+    </span>
+
+</div>
+            </main>
+
+            <aside class="marca-aside-ads" style="position: sticky; top: 15px;">
+               
+                <div class="sidebar-title-press" style="font-weight: bold; border-bottom: 2px solid #950F0F; padding-bottom: 5px; font-size: 1.1rem; font-family: sans-serif;">Publicidad</div>
+
+<div class="ad-space-sidebar" style="margin-top: 10px; width: 100%; max-width: 300px; box-sizing: border-box; text-align: center;">
+   
+    <img src="img/anunciofeo5.png" alt="Anuncio publicitario" style="width: 100%; height: auto; max-height: 250px; object-fit: contain; display: block; border: 1px solid #ddd; border-radius: 4px; background-color: #fff;">
+   
+</div>
+
+                <div class="sidebar-title-press">Sección interactiva</div>
+               
+                <div style="background: #fff; padding: 8px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.03); margin-bottom: 20px;">
+                    <div style="position: relative; padding-bottom: 177.78%; height: 0; overflow: hidden; background: #000;">
+                        <video controls style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;">
+                            <source src="img/1000142016.mp4" type="video/mp4">
+                            Tu navegador no soporta la reproducción de este video.
+                        </video>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #555; margin-top: 8px; text-align: center; font-weight: 500;">
+                        Documentación y canales de divulgación de riesgo
+                    </div>
+                </div>
+
+                <div class="sidebar-title-press">Las más leídas</div>
+                <div class="trending-press-row">
+                    <span class="trending-press-num">1.</span> Pérdida de bosques del siglo XX y la amenaza del Popocatépetl.
+                </div>
+                <div class="trending-press-row">
+                    <span class="trending-press-num">2.</span> Sílice cristalina y el desarrollo crónico de la silicosis.
+                </div>
+
+            </aside>
+
+        </div>
+    </div>
+</div>
+
+<div id="cap3" class="page">
+<style>
+.marca-body-container { font-family: 'Roboto', sans-serif; background-color: #f4f4f4; color: #111; max-width: 1200px; margin: 0 auto; padding: 15px; }
+
+/* Encabezado / Identidad de Sección */
+.marca-header-sim { display: flex; align-items: center; background: #fff; border-bottom: 4px solid #950F0F; padding: 12px 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+.marca-tag-logo { background-color: #950F0F; color: #fff; font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 1.8rem; padding: 4px 14px; letter-spacing: -1px; text-transform: uppercase; margin-right: 15px; display: inline-block; }
+.marca-section-title { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.85rem; color: #950F0F; text-transform: uppercase; letter-spacing: 1px; }
+
+/* Contenedores de Publicidad Optimizado */
+.ad-space-top { width: 100%; max-width: 970px; height: 90px; background: #e8e8e8; margin: 20px auto; border: 1px dashed #bbb; display: flex; align-items: center; justify-content: center; color: #666; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+.ad-space-sidebar { width: 300px; height: 250px; background: #e8e8e8; border: 1px dashed #bbb; display: flex; align-items: center; justify-content: center; color: #666; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; margin-bottom: 15px; }
+.ad-space-sidebar.large { height: 600px; }
+
+/* Maquetación de dos columnas (Contenido + Sidebar de anuncios) */
+.marca-layout-grid { display: grid; grid-template-columns: 7fr 3fr; gap: 30px; margin-top: 20px; align-items: start; }
+@media (max-width: 950px) { .marca-layout-grid { grid-template-columns: 1fr; } .marca-aside-ads { display: none; } }
+
+/* Cabecera del Artículo */
+.news-header { margin-bottom: 25px; }
+.news-title { font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 2.3rem; line-height: 1.1; color: #000; margin: 12px 0; letter-spacing: -0.5px; }
+.news-subtitle { font-size: 1.1rem; line-height: 1.4; color: #444; font-weight: 400; border-left: 4px solid #950F0F; padding-left: 15px; margin-bottom: 15px; }
+.news-meta { font-size: 0.8rem; color: #666; border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0; padding: 8px 0; font-weight: 500; }
+
+/* Estilos de Texto Escaneables */
+.news-p { font-size: 1.05rem; line-height: 1.55; color: #222; margin-bottom: 15px; text-align: justify; }
+.news-subheading { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.2rem; color: #fff; background: #950F0F; padding: 4px 10px; margin: 30px 0 15px 0; text-transform: uppercase; display: inline-block; }
+
+/* Contenedores de Imágenes Periodísticas */
+.news-image-frame { margin: 25px 0; background: #fff; border: 1px solid #ddd; padding: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+.news-image-content { width: 100%; height: 340px; background: #222; display: flex; align-items: flex-end; position: relative; background-size: cover; background-position: center; }
+.news-image-headline { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.25rem; text-transform: uppercase; color: #fff; background: rgba(0, 0, 0, 0.7); padding: 10px 15px; width: 100%; box-sizing: border-box; }
+.news-image-caption { font-size: 0.8rem; color: #555; margin-top: 8px; font-style: italic; padding: 0 5px; border-left: 2px solid #950F0F; }
+
+/* Listas y Cronologías */
+.news-bullet-timeline { list-style: none; margin: 20px 0; border-left: 3px solid #950F0F; padding-left: 15px; }
+.news-bullet-timeline li { margin-bottom: 12px; font-size: 0.95rem; line-height: 1.4; }
+.news-date-badge { font-family: 'Montserrat', sans-serif; font-weight: 800; color: #950F0F; display: inline-block; margin-right: 6px; }
+
+/* Acordeones Interactivos */
+.news-accordion { margin: 20px 0; }
+.acc-item { border: 1px solid #ddd; margin-bottom: 8px; background: #fff; }
+.acc-trigger { background: #f9f9f9; padding: 14px; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.9rem; color: #111; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+.acc-trigger:hover { background: #950F0F; color: #fff; }
+.acc-panel { padding: 0 14px; max-height: 0; overflow: hidden; transition: all 0.3s ease-out; font-size: 0.9rem; line-height: 1.4; color: #444; }
+.acc-item.active { border-color: #950F0F; }
+.acc-item.active .acc-trigger { background: #950F0F; color: #fff; }
+.acc-item.active .acc-panel { padding: 14px; max-height: 300px; border-top: 1px solid #ddd; }
+
+/* Módulos Especiales Destacados */
+.news-opinion-card { background: #111; color: #fff; padding: 25px; border-top: 5px solid #950F0F; margin: 30px 0; }
+.opinion-text { font-size: 1.15rem; font-weight: bold; font-style: italic; line-height: 1.4; margin-bottom: 12px; }
+.opinion-signature { font-size: 0.8rem; color: #aaa; text-transform: uppercase; font-family: 'Montserrat'; letter-spacing: 0.5px; }
+
+/* Componente de Semáforo Deportivo */
+.news-widget-semaforo { background: #fff; border: 2px solid #111; border-top: 6px solid #950F0F; padding: 20px; max-width: 440px; margin: 30px auto; box-shadow: 0 4px 15px rgba(0,0,0,0.06); }
+.widget-grid-container { display: flex; gap: 20px; align-items: center; background: #fcfcfc; padding: 15px; border-radius: 4px; border: 1px solid #eee; }
+.widget-structure { background: #111; padding: 12px; border-radius: 25px; display: flex; flex-direction: column; gap: 10px; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
+.widget-bulb { width: 50px; height: 50px; border-radius: 50%; opacity: 0.25; cursor: pointer; transition: all 0.2s ease; border: 2px solid rgba(0,0,0,0.3); }
+.widget-bulb:hover { opacity: 0.6; }
+.widget-bulb.active-state { opacity: 1 !important; box-shadow: 0 0 15px currentColor; }
+#bulb-rojo { background-color: #e74c3c; color: #e74c3c; }
+#bulb-amarillo { background-color: #f1c40f; color: #f1c40f; }
+#bulb-verde { background-color: #2ecc71; color: #2ecc71; }
+.widget-screen { flex: 1; background: #fff; border: 1px solid #ddd; padding: 12px; border-left: 6px solid #f1c40f; min-height: 130px; }
+.widget-screen h5 { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.9rem; margin-bottom: 6px; text-transform: uppercase; }
+.widget-screen p { font-size: 0.8rem; line-height: 1.35; color: #333; margin: 0; }
+
+/* Elementos de la barra lateral */
+.sidebar-header-title { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1rem; text-transform: uppercase; border-bottom: 3px solid #111; padding-bottom: 4px; margin-bottom: 12px; }
+.sidebar-trending-item { font-size: 0.85rem; font-weight: bold; padding: 8px 0; border-bottom: 1px dashed #ccc; line-height: 1.2; }
+</style>
+
+<div class="marca-body-container">
+    <div class="marca-header-sim">
+        <div class="marca-tag-logo">Artículo III </div>
+        <div class="marca-section-title">Eventos históricos | Pibb-Historia</div>
+    </div>
+
+    <div class="ad-space-top">
+        <img src="img/elotes.png" alt="Anuncio Pibb Eruption" style="width: 100%; height: auto; max-width: 970px; display: block; margin: 0 auto;">
+    </div>
+
+    <div class="marca-layout-grid">
+
+        <main style="min-width: 0;">
+            <div class="news-header">
+                <h1 class="news-title">Políticas y ética volcánica en México</h1>
+                <div class="news-subtitle">Evolución de las políticas públicas y el cuestionamiento del contrato social frente a la fuerza destructiva de la naturaleza.</div>
+                <div class="news-meta">Por <b>Pibble Eruption</b> | Proyecto de investigación </div>
+            </div>
+
+            <p class="news-p" style="font-size: 1.15rem; text-align: justify;">
+                La relación entre la sociedad y los phenomena volcánicos en México expone una dualidad histórica entre la devastación inmediata y la vida. El despertar del <strong>Popocatépetl</strong> el 21 de diciembre de 1994 golpeó severamente los cultivos locales a corto plazo, pero demostró su beneficio ecológico de fondo al fertilizar y enriquecer los suelos a largo plazo. Sin embargo, en entornos urbanos masificados, el impacto es mucho más agresivo.
+            </p>
+
+            <div class="news-image-frame" style="width: 100%; max-width: 700px; aspect-ratio: 16 / 9; overflow: hidden; position: relative;">
+                <div class="news-image-content" style="background-image: linear-gradient(transparent, rgba(0,0,0,0.8)), url('img/lapapuceniza.jpg'); background-size: cover; background-position: center; width: 100%; height: 100%; display: flex; align-items: flex-end; padding: 20px; box-sizing: border-box;"></div>
+            </div>
+            <div class="news-image-caption" style="font-family: sans-serif; font-size: 14px; color: #333; margin-top: -15px; margin-bottom: 20px; padding: 0 5px;">
+                Caída severa de ceniza volcánica afectando los suministros de agua potable y colapsando infraestructuras viales en Puebla y la Ciudad de México.
+            </div>
+
+            <p class="news-p" style="font-size: 1.15rem; text-align: justify;">
+                La caída constante de ceniza altera drásticamente el ritmo de las urbes, dañando la salud por afecciones respiratorias severas y contaminando las reservas de agua. Este fenómeno obliga al Estado a coordinar evacuaciones complejas que ponen a prueba el compromiso ético de proteger la vida por encima de los intereses financieros.
+            </p>
+
+            <style>
+                .news-subheading-interactive { font-size: 2rem; font-weight: bold; color: #d32f2f; margin-bottom: 15px; border-left: 5px solid #d32f2f; padding-left: 10px; font-family: sans-serif; }
+                .news-p-large { font-size: 1.25rem; line-height: 1.6; color: #333; margin-bottom: 30px; font-family: sans-serif; }
+                .timeline-container { position: relative; max-width: 800px; margin: 0 auto; padding: 20px 0; font-family: sans-serif; }
+                .timeline-container::after { content: ''; position: absolute; width: 4px; background-color: #e0e0e0; top: 0; bottom: 0; left: 150px; border-radius: 2px; }
+                .timeline-item { position: relative; display: flex; align-items: center; margin-bottom: 35px; cursor: pointer; transition: transform 0.2s ease-in-out; }
+                .timeline-item:hover { transform: translateX(10px); }
+                .timeline-badge { width: 130px; text-align: right; font-size: 1.25rem; font-weight: bold; color: #555; padding-right: 20px; flex-shrink: 0; transition: color 0.2s; }
+                .timeline-item:hover .timeline-badge { color: #d32f2f; }
+                .timeline-content { margin-left: 44px; background-color: #f9f9f9; border-radius: 8px; padding: 20px; border: 1px solid #e0e0e0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 100%; position: relative; transition: all 0.2s ease-in-out; }
+                .timeline-item:hover .timeline-content { background-color: #fff; border-color: #d32f2f; box-shadow: 0 4px 15px rgba(211, 47, 47, 0.15); }
+                .timeline-content p { margin: 0; font-size: 1.15rem; color: #444; line-height: 1.6; }
+                .timeline-content::before { content: ''; position: absolute; width: 16px; height: 16px; background-color: #fff; border: 3px solid #e0e0e0; border-radius: 50%; left: -32px; top: calc(50% - 11px); z-index: 1; transition: all 0.2s; }
+                .timeline-item:hover .timeline-content::before { background-color: #d32f2f; border-color: #d32f2f; transform: scale(1.2); }
+                @media (max-width: 600px) { .timeline-container::after { left: 20px; } .timeline-item { flex-direction: column; align-items: flex-start; } .timeline-badge { text-align: left; padding-left: 45px; padding-bottom: 10px; width: auto; } .timeline-content { margin-left: 45px; width: calc(100% - 45px); } .timeline-content::before { left: -31px; } }
+                .timeline-item-colima:hover .timeline-badge { color: #950F00 !important; }
+                .timeline-item-colima:hover .timeline-content { border-color: #950F00 !important; box-shadow: 0 4px 15px rgba(149, 15, 0, 0.15) !important; background-color: #fff !important; }
+                .timeline-item-colima:hover .timeline-content::before { background-color: #950F00 !important; border-color: #950F00 !important; }
+            </style>
+
+            <div class="news-subheading-interactive" style="color: #950F00; border-left-color: #950F00;">Historial de riesgo: Volcán de Colima</div>
+            <p class="news-p-large" style="font-size: 1.15rem;">Consolidado como uno de los colosos más activos del territorio nacional, acumula más de 40 erupciones documentadas:</p>
+
+            <div class="timeline-container">
+                <div class="timeline-item timeline-item-colima">
+                    <div class="timeline-badge">1523</div>
+                    <div class="timeline-content">
+                        <p>Primer registro documental coincidiendo con la llegada de las tropas españolas.</p>
+                    </div>
+                </div>
+                <div class="timeline-item timeline-item-colima">
+                    <div class="timeline-badge">1818</div>
+                    <div class="timeline-content">
+                        <p>Erupción pliniana violenta que arrojó ceniza detectable hasta Guanajuato y la capital.</p>
+                    </div>
+                </div>
+                <div class="timeline-item timeline-item-colima">
+                    <div class="timeline-badge">1913</div>
+                    <div class="timeline-content">
+                        <p>Gran explosión que modificó radicalmente la morfología de la cima volcánica.</p>
+                    </div>
+                </div>
+                <div class="timeline-item timeline-item-colima">
+                    <div class="timeline-badge">2013 - 2017</div>
+                    <div class="timeline-content">
+                        <p>Ciclo de explosiones constantes que forzó la evacuación de múltiples comunidades aledañas en 2015.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="news-subheading">Notas institucionales de prevención</div>
+<p class="news-p" style="font-size: 1.05rem; margin-bottom: 15px;">Las catástrofes nacionales forzaron la evolución del monitoreo técnico y legal. Explora los tres momentos clave que transformaron la seguridad civil en México:</p>
+           
+<div class="hitos-premium-container">
+    <style>
+    .hitos-premium-container { display: flex; flex-direction: column; gap: 15px; margin: 15px 0; }
+    .hito-card-link { text-decoration: none; color: inherit; }
+    .hito-premium-card { display: grid; grid-template-columns: 200px 1fr; background: #fff; border: 1px solid #e2e8f0; border-left: 5px solid #950F0F; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+    .hito-premium-card:hover { transform: scale(1.005); box-shadow: 0 6px 18px rgba(149, 15, 15, 0.1); border-color: #950F0F; }
+   
+    /* Contenedor de la imagen corregido para albergar la etiqueta img */
+    .hito-premium-img-wrapper { width: 100%; height: 100%; min-height: 140px; position: relative; background-color: #f0f0f0; overflow: hidden; }
+    .hito-premium-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+   
+    .hito-premium-badge { position: absolute; top: 10px; left: 10px; background: #950F0F; color: #fff; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.95rem; padding: 2px 8px; border-radius: 3px; letter-spacing: 0.5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 2; }
+    .hito-premium-info { padding: 12px 18px; display: flex; flex-direction: column; justify-content: space-between; }
+    .hito-premium-title { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.15rem; color: #111; margin: 0 0 6px 0; line-height: 1.2; }
+    .hito-premium-text { font-size: 0.9rem; line-height: 1.4; color: #444; margin: 0 0 10px 0; text-align: justify; }
+    .hito-premium-action { font-family: 'Montserrat', sans-serif; font-size: 0.75rem; font-weight: 700; color: #950F0F; text-transform: uppercase; display: flex; align-items: center; gap: 5px; align-self: flex-start; }
+    .hito-premium-card:hover .hito-premium-action { text-decoration: underline; }
+    @media (max-width: 768px) { .hito-premium-card { grid-template-columns: 1fr; } .hito-premium-img-wrapper { height: 140px; min-height: auto; } }
+    </style>
+
+    <a href="https://www.gaceta.unam.mx/paricutin-primer-volcan-cuya-vida-fue-estudiada-desde-su-nacimiento-hasta-que-se-apago-para-siempre/" target="_blank" rel="noopener" class="hito-card-link">
+        <div class="hito-premium-card">
+            <div class="hito-premium-img-wrapper">
+                <span class="hito-premium-badge">1943</span>
+                <img src="img/paricutin.png" alt="Erupción histórica en blanco y negro del Volcán Parícutin en Michoacán" class="hito-premium-img">
+            </div>
+            <div class="hito-premium-info">
+                <div>
+                    <h4 class="hito-premium-title">Volcán Parícutin: El nacimiento observado</h4>
+                    <p class="hito-premium-text">El primer volcán en la historia moderna monitoreado minuciosamente por la ciencia desde su nacimiento en Michoacán. Aunque sepultó dos poblaciones enteras sin cobrar víctimas mortales directas, la respuesta gubernamental evidenció un vacío ético: se limitó a un reasentamiento de control militar forzado, ignorando por completo planes integrales de desarrollo social y económico post-desastre.</p>
+                </div>
+                <div class="hito-premium-action">Ver Reportaje de la Gaceta UNAM ↗️</div>
+            </div>
+        </div>
+    </a>
+
+    <a href="https://www.gob.mx/inpi/articulos/la-erupcion-del-volcan-chichonal-en-la-memoria-del-pueblo-zoque" target="_blank" rel="noopener" class="hito-card-link">
+        <div class="hito-premium-card">
+            <div class="hito-premium-img-wrapper">
+                <span class="hito-premium-badge">1982</span>
+                <img src="img/chichonal_1982.png" alt="Cráter e impacto de la erupción del volcán El Chichón en Chiapas" class="hito-premium-img">
+            </div>
+            <div class="hito-premium-info">
+                <div>
+                    <h4 class="hito-premium-title">El Chichón: Un fracaso sistémico</h4>
+                    <p class="hito-premium-text">La peor tragedia volcánica contemporánea en territorio mexicano ocurrió en Chiapas. Clasificado equivocadamente como extinto, la carencia absoluta de redes de monitoreo derivó en la pérdida de más de 2,000 vidas humanas. La emisión de alertas tardías y confusas en idioma español hacia comunidades indígenas Zoque aceleró por obligación legal la fundación del SINAPROC en 1986.</p>
+                </div>
+                <div class="hito-premium-action">Leer Memoria Histórica del Pueblo Zoque en Gob.mx ↗️</div>
+            </div>
+        </div>
+    </a>
+
+    <a href="https://geogaceta.geofisica.unam.mx/index.php/2024/12/04/30-aniversario-de-reactivacion-del-popocatepetl/" target="_blank" rel="noopener" class="hito-card-link">
+        <div class="hito-premium-card">
+            <div class="hito-premium-img-wrapper">
+                <span class="hito-premium-badge">1994</span>
+                <img src="img/reactivación.png" alt="Erupción moderna con fumarola del volcán Popocatépetl" class="hito-premium-img">
+            </div>
+            <div class="hito-premium-info">
+                <div>
+                    <h4 class="hito-premium-title">Popocatépetl: Prevención Científica Moderna</h4>
+                    <p class="hito-premium-text">Su repentina reactivación marcó un antes y un después en la infraestructura técnica del país, consolidando el monitoreo instrumental en tiempo real operado de la mano por el CENAPRED y comités de la UNAM. Nace aquí el Semáforo de Alerta Volcánica. Hoy en día, el reto ético y operativo es coordinar con precisión las complejas rutas de evacuación entre cinco estados de la República.</p>
+                </div>
+                <div class="hito-premium-action">Leer Especial del 30° Aniversario de la UNAM ↗️</div>
+            </div>
+        </div>
+    </a>
+</div>
+            <div class="seccion-filosofica" style="margin-top: 30px; display: flex; align-items: center; gap: 20px;">
+                <div style="flex: 1; padding: 25px; background: linear-gradient(135deg, #f4eccf 0%, #e7d7b5 100%); border: 1px solid #d2b48c; box-shadow: inset 0 0 15px rgba(0,0,0,0.1); border-radius: 8px;">
+                    <p style="font-family: Georgia, serif; font-size: 1.3rem; font-weight: bold; color: #950F0F; margin: 0 0 10px 0; font-style: italic; text-align: justify;">
+                        "¿Es el volcán una amenaza en sí misma, o solo un obstáculo para el flujo de capital?"
+                    </p>
+                    <p style="font-family: Georgia, serif; font-size: 0.95rem; color: #3e2723; margin: 0; line-height: 1.6; font-weight: normal; text-align: justify;">
+                        <strong style="color: #000; font-size: 1rem;">Filosofía ambiental:</strong> El riesgo no es un fenómeno puramente natural, es una construcción social por falta de planeación.
+                    </p>
+                </div>
+                <img src="img/Gemini_Generated_Image_omfr9nomfr9nomfr-removebg-preview.png" alt="Perrito Filósofo" style="width: 220px; height: auto; flex-shrink: 0;">
+            </div>
+
+            <div class="news-image-frame" style="width: 100%; max-width:700px; border: 1px solid #ddd; font-family: sans-serif; position: relative; box-sizing: border-box;">
+                <div class="news-image-content" style="height: 220px; position: relative; overflow: hidden; background-color: #f0f0f0;">
+    <img src="img/SSN.png" alt="Servicio Sismológico Nacional SSN logo with a seismograph trace" style="max-width: 100%; max-height: 100%; display: block; margin: auto; position: absolute; top: 0; bottom: 0; left: 0; right: 0; padding: 15px;">
+    <div class="news-image-headline" style="position: absolute; bottom: 0; left: 0; width: 100%; background: linear-gradient(transparent, rgba(0,0,0,0.8)); color: white; font-size: 16px; font-weight: bold; padding: 8px 12px; z-index: 10;">
+        Alerta temprana
+    </div>
+</div>
+<div class="news-image-caption" style="padding: 8px 12px; font-size: 13px; color: #444; background-color: white;">
+    Redes sismológicas y químicas que alimentan el sistema preventivo del Centro Nacional de Prevención de Desastres.
+</div>
+
+            <p class="news-p" style="font-size: 1.15rem; text-align: justify;">
+                Diseñado en conjunto por el CENAPRED y los comités técnicos de la UNAM, el <strong>Semáforo de Alerta Volcánica</strong> funciona como un recurso pedagógico esencial: traduce complejos flujos de datos sísmicos a un código de colores universalmente entendible por la población civil.
+            </p>
+
+            <div class="news-widget-emaforo-container" style="display: flex; align-items: center; gap: 20px; margin-top: 20px; max-width: 1000px; margin-left: auto; margin-right: auto;">
+                <div class="news-widget-semaforo" style="flex: 0 1 auto; margin: 0;">
+                    <div style="text-align:center; font-family:'Montserrat'; font-weight:800; font-size:1rem; margin-bottom:12px; text-transform:uppercase; color: #333;">Semáforo de alerta volcánica</div>
+                   
+                    <div class="widget-grid-container" style="display: flex; gap: 15px; align-items: center;">
+                        <div class="widget-structure" style="flex: 0 0 110px; padding: 12px; background: #222; border-radius: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                            <div onclick="cambiarWidgetFoco('rojo')" class="widget-bulb" id="bulb-rojo" style="width: 85px; height: 85px; border-radius: 50%; background-color: #500; cursor: pointer;"></div>
+                            <div onclick="cambiarWidgetFoco('amarillo')" class="widget-bulb active-state" id="bulb-amarillo" style="width: 85px; height: 85px; border-radius: 50%; background-color: #fca311; box-shadow: 0 0 20px #fca311; cursor: pointer;"></div>
+                            <div onclick="cambiarWidgetFoco('verde')" class="widget-bulb" id="bulb-verde" style="width: 85px; height: 85px; border-radius: 50%; background-color: #050; cursor: pointer;"></div>
+                        </div>
+                       
+                        <div id="widget-screen-display" class="widget-screen" style="flex: 1 1 320px; padding: 18px; border: 2px solid #ccc; border-radius: 10px; background: #fff;">
+                            <h5 id="widget-title-display" style="font-family:'Montserrat'; font-size: 1.2rem; margin: 0 0 10px 0;">ALERTA AMARILLA - Preparación</h5>
+                            <p id="widget-text-display" style="font-family:'Montserrat'; font-size: 0.95rem; line-height: 1.5; margin: 0; color: #444;">Actividad interna en incremento manifesto. Crecimiento de domos y exhalaciones frecuentes de ceniza. <strong>Recomendación:</strong> Identificar rutas de evacuación, cubrir depósitos de agua y respetar el radio de exclusión.</p>
+                        </div>
+                    </div>
+                </div>
+<div class="widget-image-container" style="flex: 0 0 180px; display: flex; justify-content: center; align-items: center; overflow: hidden; padding: 10px; box-sizing: border-box;">
+    <img src="img/policia.png" alt="Bulldog policía informando" style="width: 100%; height: auto; display: block; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); object-fit: contain;">
+</div>
+        </main>
+
+    <aside class="marca-aside-ads" style="display: flex; flex-direction: column; gap: 25px;">
+   
+    <div class="sidebar-header-title" style="margin-bottom: 0;">Publicidad</div>
+   
+    <div class="ad-space-sidebar" style="margin-bottom: 0; display: flex; align-items: center; justify-content: center; width: 300px; height: 250px; background-color: #eee; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; box-sizing: border-box;">
+       
+        <img src="img/coca.png" alt="Anuncio publicitario de CONAMAT para curso de ingreso a la UNAM con estudiante sonriente" style="max-width: 100%; height: auto; display: block; object-fit: contain;">
+       
+    </div>
+   
+
+            <div class="sidebar-header-title" style="margin-bottom: 0;">Las más leídas</div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="sidebar-trending-item" style="border-bottom: 1px dashed #ccc; padding-bottom: 8px;">
+                    <span style="color:#950F0F; font-size:1.1rem; margin-right:4px;">1.</span> Los mapas de exclusión que generan debate en las faldas del Popocatépetl.
+                </div>
+                <div class="sidebar-trending-item" style="border-bottom: 1px dashed #ccc; padding-bottom: 8px;">
+                    <span style="color:#950F0F; font-size:1.1rem; margin-right:4px;">2.</span> ¿Están listas las rutas de evacuación para este año? El reporte crítico.
+                </div>
+            </div>
+
+            <div class="news-image-frame" style="background: #fff; border: 1px solid #ddd; padding: 10px; border-radius: 4px; margin: 0; width: 100%; max-width: 100%; box-sizing: border-box;">
+   
+    <img src="img/anunciofeo3.png" alt="Descripción de la imagen" style="width: 100%; height: auto; max-height: 300px; object-fit: cover; display: block; border-radius: 2px;">
+   
+    <p class="news-image-caption" style="font-size: 0.85rem; color: #555; margin: 10px 0 0 0; border-left: 2px solid #950F0F; padding-left: 5px; font-family: sans-serif;">
+        Anuncio.
+    </p>
+
+</div>
+
+            <div class="news-video-frame" style="background: #fff; border: 1px solid #ddd; padding: 10px; border-radius: 4px; max-width: 100%; box-sizing: border-box;">
+   
+    <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; background: #000; border-radius: 2px;">
+       
+        <video controls style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain;">
+            <source src="img/1000142021.mp4" type="video/mp4">
+            Tu navegador no soporta la reproducción de este video.
+        </video>
+
+    </div>
+   
+    <p class="news-image-caption" style="font-size: 0.85rem; color: #555; margin: 10px 0 0 0; border-left: 2px solid #950F0F; padding-left: 5px; font-family: sans-serif;">
+        Análisis histórico de la erupción de Krakatoa.
+    </p>
+   
+</div>
+
+           <aside class="marca-aside-ads" style="display: flex; flex-direction: column; gap: 25px;">
+   
+    <div class="sidebar-header-title" style="margin-bottom: 0;">Publicidad Especial</div>
+   
+    <div class="ad-space-sidebar large" style="margin-bottom: 0; display: flex; align-items: center; justify-content: center; width: 300px; height: 600px; background-color: #fcfcfc; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; box-sizing: border-box; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+       
+        <img src="img/anunciofeo2.png" alt="Anuncio de CONAMAT con 30 por ciento de descuento en cursos de ingreso UNAM, Poli, Colbach y Comipems" style="max-width: 100%; height: 100%; display: block; object-fit: cover;">
+       
+    </div>
+   
+</aside>
+        </aside>
+
+    </div>
+</div>
+
+<script>
+function toggleAccMarca(element) {
+    const isCurrentlyActive = element.classList.contains('active');
+    document.querySelectorAll('.acc-item').forEach(item => item.classList.remove('active'));
+    if (!isCurrentlyActive) {
+        element.classList.add('active');
+    }
+}
+
+function cambiarWidgetFoco(color) {
+    const screen = document.getElementById('widget-screen-display');
+    const title = document.getElementById('widget-title-display');
+    const text = document.getElementById('widget-text-display');
+
+    document.querySelectorAll('.widget-bulb').forEach(bulb => bulb.classList.remove('active-state'));
+    document.getElementById('bulb-' + color).classList.add('active-state');
+
+    if (color === 'verde') {
+        screen.style.borderLeftColor = "#2ecc71";
+        title.innerText = "ALERTA VERDE - Normalidad";
+        text.innerHTML = "El volcán se encuentra en calma. La población debe conocer la localización de los mapas de peligro oficiales y participar en simulacros preventivos.";
+    } else if (color === 'amarillo') {
+        screen.style.borderLeftColor = "#f1c40f";
+        title.innerText = "ALERTA AMARILLA - Preparación";
+        text.innerHTML = "Actividad interna en incremento manifiesto. Crecimiento de domos y exhalaciones frecuentes de ceniza. <strong>Recomendación:</strong> Identificar rutas de evacuación, cubrir depósitos de agua y respetar el radio de exclusión.";
+    } else if (color === 'rojo') {
+        screen.style.borderLeftColor = "#e74c3c";
+        title.innerText = "ALERTA ROJA - Alarma";
+        text.innerHTML = "¡Peligro crítico inminente! Actividad explosiva de gran escala y flujos piroclásticos destructivos. La <strong>evacuación civil de las zonas afectadas es obligatoria</strong>.";
+    }
+}
+</script>
+</div>
+
+   <div id="cap4" class="page">
+    <div class="marca-body-container">
+        <div class="marca-header-sim">
+            <div class="marca-tag-logo" style="background-color: var(--volcanic-red, #950F0F); color: white;">ARTÍCULO IV</div>
+            <div class="marca-section-title">Modelos Matemáticos | Pibb-Cálculo </div>
+        </div>
+
+        <div class="marca-layout-grid" style="display: grid; grid-template-columns: 7fr 3fr; gap: 40px; align-items: start; max-width: 1200px; margin: 0 auto;">
+           
+             <main style="min-width: 0;">
+            <div class="news-header">
+                <h1 class="news-title">Cálculos sobre fenómenos volcánicos</h1>
+                <div class="news-subtitle">Explicación de los cálculos realizados ante una erupción volcánica.</div>
+                <div class="news-meta">Por <b>Pibble Eruption</b> | Proyecto de investigación </div>
+            </div>
+
+
+                <h3 class="news-subheading" style="color: "white"; font-size: 1.6rem; margin-top: 20px;">¿Cómo se calcula la ceniza caída?</h3>
+                <p class="news-p" style="line-height: 1.6; font-size: 1.1rem; text-align: justify;">
+                    Cuando un volcán lanza ceniza, esta no cae de manera uniforme; se esparce según el viento y la distancia. Para saber el peso o la cantidad total de ceniza acumulada en todo un territorio, los matemáticos usan una operación llamada <b>integral doble</b>. La fórmula se escribe así:
+                </p>
+               
+                <div style="background: #f9f9f9; padding: 20px; border-radius: 4px; text-align: center; margin: 20px 0; border: 1px solid #eee;">
+                    <p style="font-size: 1.5rem; margin: 0 0 10px 0; font-family: 'Lora', Georgia, serif; color: #2b5329;">
+                        $$M = \iint_R f(x,y) \,dA$$
+                    </p>
+                    <div style="text-align: left; max-width: 500px; margin: 0 auto; font-size: 0.95rem; line-height: 1.5;">
+                         <b>M:</b> Es la masa o cantidad total de ceniza que cayó en la región.<br>
+                         <b>El símbolo de la doble S alargada ∬ᵣ:</b> Significa que estamos sumando la ceniza trocito por trocito en todo el mapa de la zona afectada R.<br>
+                         <b>f(x,y):</b> Es la función que nos dice cuánta ceniza hay en un punto exacto del mapa.<br>
+                         <b>dA:</b> Representa cada pequeña parte del terreno que estamos sumando.
+                    </div>
+                </div>
+
+                <div style="background: #faf8f0; padding: 20px; border-left: 5px solid #2b5329; margin: 20px 0; border-radius: 0 4px 4px 0;">
+                    <h4 style="color: #2b5329; margin-top: 0; margin-bottom: 8px;">Relación ética</h4>
+                    <p style="font-size: 0.95rem; margin: 0; text-align: justify;">
+                        Ver el tamaño de estos números nos recuerda lo pequeños que somos ante la naturaleza. Esto nos invita a pensar en nuestra responsabilidad con el planeta: aunque los humanos no podemos encender ni apagar volcanes, nuestras acciones diarias sí dañan el clima global. Entender estos riesgos nos obliga a exigir mejores planes de prevención para cuidar a las comunidades.
+                    </p>
+                </div>
+
+                <h3 class="news-subheading" style="color: "white"; font-size: 1.6rem; margin-top: 30px;"> ¿Qué tan lejos llegará la lava?</h3>
+                <p class="news-p" style="line-height: 1.6; font-size: 1.1rem; text-align: justify;">
+                    La lava no avanza siempre a la misma velocidad. Va cambiando dependiendo de si el suelo está empinado, de qué tan fría esté o de si es espesa o líquida. Si conocemos su velocidad en cada momento, podemos usar el <b>cálculo integral</b> para medir toda la distancia que recorrerá:
+                </p>
+
+                <div style="background: #f9f9f9; padding: 20px; border-radius: 4px; text-align: center; margin: 20px 0; border: 1px solid #eee;">
+                    <p style="font-size: 1.5rem; margin: 0 0 10px 0; font-family: 'Lora', Georgia, serif; color: #950F0F;">
+                        $$d = \int v(t) \,dt$$
+                    </p>
+                    <div style="text-align: left; max-width: 500px; margin: 0 auto; font-size: 0.95rem; line-height: 1.5;">
+                         <b>d:</b> Es la distancia total que avanza la lava.<br>
+                         <b>El símbolo de la S alargada <span style="display: inline-block; font-family: 'Times New Roman', Georgia, serif; font-size: 1.4rem; margin: 0; padding: 0; line-height: 1; vertical-align: middle;">&#8747;</span>:</b> Significa que estamos sumando todos los pequeños avances en el tiempo.<br>
+                         <b>v(t):</b> Es la velocidad de la lava, que va cambiando a medida que pasa el tiempo <span style="display: inline-block; font-family: 'Times New Roman', Georgia, serif; font-style: italic; font-size: 1.1rem; margin: 0; padding: 0; line-height: 1; vertical-align: baseline;">t</span>.<br>
+                         <b>dt:</b> Representa cada instante o segundo que transcurre durante el viaje de la lava.
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 25px 0;">
+                    <div style="background: #f9f9f9; padding: 20px; border-top: 4px solid #950F0F; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                        <h4 style="color: #950F0F; margin-top: 0;">¿Para qué sirve esto?</h4>
+                        <ul style="padding-left: 20px; font-size: 0.95rem; margin: 0; line-height: 1.5;">
+                            <li>Para saber cuáles pueblos o casas están en peligro antes de que llegue la lava.</li>
+                            <li>Para diseñar rutas de evacuación rápidas y seguras.</li>
+                            <li>Para construir muros o protecciones en los lugares correctos.</li>
+                        </ul>
+                    </div>
+                    <div style="background: #f9f9f9; padding: 20px; border-top: 4px solid #4a3e1d; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                        <h4 style="color: #4a3e1d; margin-top: 0;">Pensamiento filosófico</h4>
+                        <p style="font-size: 0.95rem; margin: 0; text-align: justify; font-style: italic; line-height: 1.5;">
+                            Aunque las matemáticas son increíbles y nos ayudan a predecir por dónde pasará la lava, la naturaleza siempre tiene la última palabra. Esto nos enseña que los seres humanos no somos dueños del planeta; debemos aprender a convivir con su fuerza de manera humilde y respetuosa.
+                        </p>
+                    </div>
+                </div>
+
+                <h3 class="news-subheading" style="color: "white"; font-size: 1.6rem; margin-top: 30px;"> El calor del volcán: Energía térmica</h3>
+                <p class="news-p" style="line-height: 1.6; font-size: 1.1rem; text-align: justify;">
+                    Los volcanes expulsan magma a temperaturas extremas (entre 700 y 1200 grados Celsius). Al tocar el aire, esa lava empieza a enfriarse transfiriendo una enorme cantidad de calor al ambiente. Para calcular cuánta energía se libera en forma de calor, se usa la siguiente fórmula matemática:
+                </p>
+
+                <div style="background: #fdfaf2; padding: 20px; border: 1px solid #dcd1a5; border-radius: 4px; text-align: center; margin: 20px 0;">
+                    <p style="font-size: 1.6rem; margin: 0 0 12px 0; color: #4a3e1d; font-weight: bold;">
+                        $$Q = m \cdot c \cdot \Delta T$$
+                    </p>
+                    <div style="text-align: left; max-width: 500px; margin: 0 auto; font-size: 0.95rem; line-height: 1.5;">
+                         <b>Q:</b> Es la energía térmica total que se libera (se mide en Julios, una unidad de energía).<br>
+                         <b>m:</b> Es la masa o el peso de la lava expulsada (medida en kilogramos).<br>
+                         <b>c:</b> Es el "calor específico" de la lava (para la roca derretida vale más o menos 1000). Nos dice cuánto calor guarda el material.<br>
+                         <b>ΔT (Variación de Temperatura):</b> Es la resta entre la temperatura ardiente de la lava y la temperatura fresca del aire exterior.
+                    </div>
+                </div>
+
+                <div style="margin: 25px 0; padding: 20px; background: linear-gradient(to right, #f5f0db, #f9f6eb, #f5f0db); border: 1px solid #dcd1a5; border-radius: 4px; box-shadow: 2px 2px 10px rgba(0,0,0,0.05);">
+                    <h5 style="margin-top: 0; color: #3e2723; font-size: 1.1rem; text-align: center; font-weight: bold;">UN EJEMPLO CON NÚMEROS REALES</h5>
+                    <p style="font-size: 0.95rem; line-height: 1.5;">
+                        Imagina que un volcán pequeño expulsa <b>1,000,000 de kilogramos de lava</b> a una temperatura de 1000 grados Celsius y el aire de afuera está a 20 grados Celsius.
+                    </p>
+                    <ol style="font-size: 0.95rem; padding-left: 20px; line-height: 1.6;">
+                        <li><b>Calculamos el cambio de temperatura:</b> Restamos 1000 menos 20, lo que nos da <b>980 grados</b> de diferencia.</li>
+                        <li><b>Multiplicamos todo según la fórmula:</b> Multiplicamos la masa (1,000,000) por el calor específico (1000) por la diferencia de temperatura (980).</li>
+                        <li><b>Resultado final:</b> El calor liberado es de <b>980,000,000,000 joules</b>.</li>
+                    </ol>
+                    <p style="font-size: 0.9rem; font-style: italic; color: #555; margin-bottom: 0; text-align: justify; border-top: 1px dashed #dcd1a5; padding-top: 10px;">
+                        ¡Eso es muchísima energía! Toda esa ola de calor repentina cambia por completo el clima del lugar, calienta el aire de la atmósfera y afecta directamente a las plantas, animales y pueblos cercanos.
+                    </p>
+                </div>
+
+                <div class="contenedor-perrito" style="background: #fff; border: 2px solid #ddd; padding: 25px; margin: 40px 0; display: flex; align-items: center; gap: 20px;">
+                    <div class="pizarron" style="flex: 1; background: #2b5329; border: 8px solid #634221; border-radius: 8px; min-height: 100px; display: flex; align-items: center; justify-content: center; padding: 15px;">
+                        <p style="color: #fff; font-family: 'Comic Sans MS', cursive; font-size: 1.05rem; text-align: center; margin: 0;">
+                            "¿Viste? Esos 980 mil millones de Joules equivalen a la energía de miles de rayos cayendo juntos. Por eso la conciencia ambiental nos pide cuidar el planeta y respetarlo."
+                        </p>
+                    </div>
+                    <img src="img/pibb_inteligente.png" alt="Perrito profesor" class="perrito-img" style="max-height: 1400px; height: auto;">
+                </div>
+            </main>
+
+            <aside class="marca-aside-ads" style="display: flex; flex-direction: column; gap: 25px;">
+                <div class="sidebar-header-title" style="font-weight: bold; border-bottom: 2px solid #950F0F; padding-bottom: 5px; font-size: 1.1rem;">Glosario</div>
+                <div style="padding: 15px; background: #f4f4f4; border-radius: 8px; font-size: 0.9rem; line-height: 1.4;">
+                    <strong style="color: #950F0F;">Integral Doble:</strong> Imagina que quieres contar cuánta arena hay en una playa pero la arena tiene montones altos y bajos. Esta operación te permite sumarla toda con precisión.
+                    <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ccc;">
+                    <strong style="color: #950F0F;">Joules (J):</strong> Es la unidad que se usa en la ciencia para medir la energía o el calor, igual que usas los metros para la distancia.
+                 
+                </div>
+
+               <div class="sidebar-header-title" style="font-weight: bold; border-bottom: 2px solid #950F0F; padding-bottom: 5px; font-size: 1.1rem; font-family: sans-serif;">Publicidad</div>
+<div style="text-align: center; padding: 15px; border: 1px solid #ddd; background: #fff; border-radius: 4px; max-width: 100%; box-sizing: border-box;">
+   
+    <div style="background-color: #f9f9f9; height: 160px; border-radius: 2px; border: 1px dashed #bbb; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px;">
+       
+        <img src="img/anunciofeo4.png" alt="Pug pollo frito" style="max-width: 100%; max-height: 110px; object-fit: contain; display: block; margin: 0 auto;">
+       
+        <span style="font-size: 0.8rem; color: #666; text-align: center; margin-top: 8px; font-weight: bold; font-family: sans-serif;">Anuncio</span>
+       
+    </div>
+</div>
+                   
+                </div>
+            </aside>
+
+        </div>
+    </div>
+</div>
+
+
+
+   <div id="cap5" class="page">
+    <div class="marca-body-container">
+        <div class="marca-header-sim">
+            <div class="marca-tag-logo">ARTÍCULO V</div>
+            <div class="marca-section-title"> Pensamiento crítico | Pibb-Filosofía </div>
+        </div>
+
+        <div class="marca-layout-grid" style="display: grid; grid-template-columns: 7fr 3fr; gap: 40px; align-items: start; max-width: 1200px; margin: 0 auto;">
+           
+            <main style="min-width: 0;">
+            <div class="news-header">
+                <h1 class="news-title">Perspectiva filosófica</h1>
+                <div class="news-subtitle">Análisis filosófico sobre las consecuencias provocadas por erupciones.</div>
+                <div class="news-meta">Por <b>Pibble Eruption</b> | Proyecto de investigación </div>
+            </div>
+
+                <div style="margin: 20px auto; padding: 20px; max-width: 500px; background: linear-gradient(to right, #f5f0db, #f9f6eb, #f5f0db); border: 1px solid #dcd1a5; border-radius: 4px; box-shadow: 3px 3px 15px rgba(0,0,0,0.08), inset 0 0 20px rgba(218,202,143,0.3); text-align: center; font-style: italic;">
+                    <p style="font-size: 1.25rem; color: #4a3e1d; font-family: 'Lora', Georgia, serif; line-height: 1.4; margin-bottom: 12px; font-weight: bold;">
+                        "Una cosa es justa cuando tiende a preservar la integridad, estabilidad y belleza de la comunidad biótica. Es injusta cuando tiende a lo contrario."
+                    </p>
+                    <p style="font-size: 0.95rem; color: #3e2723; font-family: 'Lora', Georgia, serif; line-height: 1.5; margin-bottom: 15px; font-style: normal; text-align: justify;">
+                        Esta frase resume la <strong style="color: #950F0F;">"Ética de la Tierra"</strong> (Land Ethic) propuesta por el ecólogo y ambientalista estadounidense Aldo Leopold en su libro de 1949, <em>A Sand County Almanac</em>.
+                    </p>
+                    <div style="margin-top: 15px; display: flex; justify-content: center;">
+                        <img src="img/Gemini_Generated_Image_omfr9nomfr9nomfr-removebg-preview.png" alt="Perrito Filósofo" style="max-width: 160px; width: 100%; height: auto; display: block;">
+                    </div>
+                </div>
+
+                <h3 class="news-subheading"> Viviendas en zonas de riesgo</h3>
+                <div class="original-content-body">
+                    <p class="news-p" style="font-size: 1.2rem;">
+                        Cuando una ciudad se agranda hacia zonas peligrosas, como las faldas del <b>Popocatépetl</b>, se genera un problema muy grave: las personas con menos dinero suelen ser las que terminan viviendo en los lugares por donde pasaría la lava en caso de una erupción.
+                    </p>
+                </div>
+                                   
+                <div class="news-image-frame" style="height: auto; text-align: center; margin: 20px 0;">
+                    <img src="img/viviendas.png" alt="Urbanización vs. Geodinámica" style="max-width: 80%; height: auto; display: block; margin: 0 auto;">
+                    <p class="news-image-caption" style="margin-top: 15px;">
+                        Viviendas cerca de la falda del volcán Popocatepétl.
+                    </p>
+                </div>
+
+                <p class="news-p">
+                    Históricamente, los asentamientos humanos han buscado los volcanes por su fertilidad desde hace <b>7,000 años</b>. Sin embargo, en la actualidad, el costo de la seguridad es masivo. Para que el gobierno de México pudiera reubicar al 75% de la población en riesgo, se requeriría una inversión de <b>90 millones de pesos</b>. Ante este costo, el Estado opta por el monitoreo 24/7, planteando la pregunta, ¿Es el monitoreo suficiente para proteger la integridad de quienes deciden quedarse?
+                </p>
+
+                <h3 class="news-subheading"> Del antropocentrismo a la salud Pública</h3>
+                <div class="original-content-body">
+                    <p class="news-p">
+                        Frente a una erupción, la filosofía ambiental propone abandonar el <b>Antropocentrismo</b> (el hombre como centro) para abrazar el <b>Biocentrismo</b> y el <b>Ecocentrismo</b>. Aquí, el volcán no es un enemigo, sino un agente de equilibrio.
+                    </p>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 30px 0;">
+                        <div style="background: #f9f9f9; padding: 25px; border-left: 5px solid #2b5329;">
+                            <h4 style="color: #2b5329; margin-top: 0;">Resiliencia Ecológica</h4>
+                            <p style="font-size: 0.95rem;">La ecología aporta la lección de la <b>regeneración</b>: las erupciones destruyen para enriquecer con magnesio y fósforo, permitiendo que la vida resurja con más fuerza.</p>
+                        </div>
+                        <div style="background: #f9f9f9; padding: 25px; border-left: 5px solid #950F0F;">
+                            <h4 style="color: #950F0F; margin-top: 0;">Salud Pública Ética</h4>
+                            <p style="font-size: 0.95rem;">La salud pública actúa como el brazo preventivo de la ética, protegiendo a la comunidad de la ceniza y los gases tóxicos, asumiendo la responsabilidad del cuidado del vulnerable.</p>
+                        </div>
+                    </div>
+
+                    <div style="margin: 20px auto; padding: 20px; max-width: 500px; background: linear-gradient(to right, #f5f0db, #f9f6eb, #f5f0db); border: 1px solid #dcd1a5; border-radius: 4px; box-shadow: 3px 3px 15px rgba(0,0,0,0.08), inset 0 0 20px rgba(218,202,143,0.3); text-align: center; font-style: italic;">
+   
+    <p style="font-size: 1.25rem; color: #4a3e1d; font-family: 'Lora', Georgia, serif; line-height: 1.4; margin-bottom: 12px; font-weight: bold;">
+        "La naturaleza no tiene fines humanos; no nos conoce."
+    </p>
+   
+    <p style="font-size: 0.95rem; color: #3e2723; font-family: 'Lora', Georgia, serif; line-height: 1.5; margin-bottom: 15px; font-style: normal; text-align: justify;">
+        Esta emblemática reflexión pertenece al filósofo neerlandés de origen sefardí <strong style="color: #950F0F;">Baruch Spinoza</strong>, quien en su obra cumbre desafió las visiones antropocéntricas de su época al proponer que la naturaleza opera bajo sus propias leyes eternas y no en función de las necesidades humanas.
+    </p>
+   
+    <div style="margin-top: 15px; display: flex; justify-content: center;">
+        <img src="img/pibb_inteligente.png" alt="Imagen Ilustrativa Pergamino 2" style="max-width: 160px; width: 100%; height: auto; display: block; border: 1px dashed #aaa; background: #eee; padding: 5px;">
+    </div>
+</div>
+
+                <h3 class="news-subheading"> Lo sublime: La belleza de lo aterrador</h3>
+                <div class="original-content-body">
+                    <p class="news-p">
+                        Una erupción ofrece la experiencia de lo <b>sublime</b>: ese sentimiento de terror y admiración que surge al enfrentarnos a una fuerza infinita frente a nuestra pequeñez. Immanuel Kant decía que lo sublime nos eleva, pues aunque físicamente somos nada ante el volcán, nuestra razón puede comprenderlo y predecirlo.
+                    </p>
+
+                </div>
+
+                <div class="contenedor-perrito" style="background: #fff; border: 2px solid #ddd; padding: 30px; margin: 50px 0; display: flex; align-items: center; gap: 20px;">
+                    <div class="pizarron" onclick="cambiarFraseFilosofica()" style="flex: 1; cursor: pointer; background: #2b5329; border: 8px solid #634221; border-radius: 8px; min-height: 120px; display: flex; align-items: center; justify-content: center; padding: 20px;">
+                        <p id="frase-filo-pibb" style="color: #fff; font-family: 'Comic Sans MS', cursive; font-size: 1.1rem; text-align: center; margin: 0;">
+                            "¡Hola! Soy Pibb. Haz clic aquí para ver cómo la filosofía nos ayuda a entender a los volcanes."
+                        </p>
+                    </div>
+                    <img src="img/PIBBLEPROFE-removebg-preview.png" alt="Perrito profesor" class="perrito-img" style="max-height: 160px; height: auto;">
+                </div>
+            </main>
+
+            <aside class="marca-aside-ads" style="display: flex; flex-direction: column; gap: 25px;">
+               
+                <div class="sidebar-header-title" style="font-weight: bold; border-bottom: 2px solid #950F0F; padding-bottom: 5px;">Glosario</div>
+                <div style="padding: 15px; background: #f4f4f4; border-radius: 8px;">
+                    <strong style="color: #950F0F;">Antropocentrismo:</strong> El hombre como dueño del entorno.
+                    <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ccc;">
+                    <strong style="color: #950F0F;">Ecocentrismo:</strong> Sostiene que el ser humano es solo un componente más de la Tierra y no el ser superior.
+                    <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ccc;">
+                    <strong style="color: #950F0F;">Lo sublime:</strong> Belleza que nos sobrepasa.
+                </div>
+
+                <div class="sidebar-header-title" style="font-weight: bold; border-bottom: 2px solid #950F0F; padding-bottom: 5px;">Sección interactiva</div>
+<div style="text-align: center; padding: 20px; border: 2px dashed #950F0F; background: #fff;">
+   
+    <img src="img/anunciofeo.png" alt="Anuncio publicitario de curso de ingreso a la UNAM CONAMAT" style="max-width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+</div>
+
+              <div class="news-image-frame" style="background: #fff; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+    <div class="news-image-content" style="background-color: #eee; height: 220px; border-radius: 2px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+        <img src="img/chilaquiles.png" alt="Anuncio publicitario de CONAMAT para curso de ingreso a la UNAM con estudiante sonriente" style="max-width: 100%; height: auto; display: block; object-fit: contain;">
+    </div>
+   
+    <p class="news-image-caption" style="font-size: 0.85rem; color: #555; margin: 10px 0 0 0; text-align: center;">
+        Chilaquilovskis
+    </p>
+</div>
+
+               <div class="news-video-frame" style="background: #fff; border: 1px solid #ddd; padding: 10px; border-radius: 4px; max-width: 100%; box-sizing: border-box;">
+   
+    <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; background: #000; border-radius: 2px;">
+       
+        <video controls style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain;">
+            <source src="img/1000142022.mp4" type="video/mp4">
+            Tu navegador no soporta la reproducción de video.
+        </video>
+
+    </div>
+   
+    <p class="news-image-caption" style="font-size: 0.85rem; color: #555; margin: 10px 0 0 0; text-align: center; font-family: sans-serif;">
+       ¿Por qué los volcanes nos atraen y nos asustan?
+    </p>
+   
+</div>
+
+            </aside>
+        </div>
+    </div>
+
+    <script>
+        const frasesFilosofia = [
+            "Kant decía que lo 'Sublime' es cuando vemos un volcán y nos sentimos pequeños pero inteligentes.",
+            "La filosofía nos pide dejar de creer que somos los dueños del volcán ¡Solo somos sus vecinos!",
+            "¿Sabías que hace 7,000 años la gente ya vivía aquí? ¡El suelo negro es un regalo de la tierra!",
+            "90 millones es mucho dinero, por eso Pibb dice que el monitoreo es nuestro mejor amigo .",
+            "La resiliencia no es solo sobrevivir, es aprender a respetar el ritmo del planeta."
+        ];
+        let fraseIdx = 0;
+
+        function cambiarFraseFilosofica() {
+            fraseIdx = (fraseIdx + 1) % frasesFilosofia.length;
+            document.getElementById('frase-filo-pibb').innerText = frasesFilosofia[fraseIdx];
+        }
+    </script>
+</div>
+    </div>
+
+<div id="articles" class="page" style="max-width: 1200px; margin: 0 auto; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+
+    <div class="card" style="border-top: 5px solid #871908; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 40px; background: #fff; border-radius: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 1px solid #ddd; padding-bottom: 15px;">
+            <div>
+                <span id="art1-label" style="color: #871908; font-family: 'Montserrat', sans-serif; font-weight: bold; font-size: 0.8rem; letter-spacing: 2px;">SCIENTIFIC REVIEW</span>
+                <h1 id="art1-title" style="font-size: 2.3rem; margin-top: 5px; margin-bottom: 0; color: #222;">Volcanic Eruptions: Mechanics and Global Impact</h1>
+            </div>
+            <button onclick="toggleLanguageArt1()" id="langBtnArt1"
+                style="background: #871908; border: none; color: white; padding: 10px 20px; font-family: 'Montserrat', sans-serif; font-weight: bold; cursor: pointer; font-size: 0.7rem; letter-spacing: 1px; transition: 0.3s; border-radius: 4px;">
+                ESPAÑOL
+            </button>
+        </div>
+
+        <p id="art1-intro" style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 40px; border-left: 3px solid #871908; padding-left: 20px; color: #333;">
+            A volcanic eruption is a complex geological process where internal pressure forces magma to the surface. Understanding these events is crucial for global safety and environmental science.
+        </p>
+
+        <h3 id="art1-sect-1" style="text-transform: uppercase; font-size: 1rem; letter-spacing: 1px; margin-bottom: 20px; color: #555;">Technical Classification</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px;">
+            <div style="min-height: 140px; border: 1px solid #eee; padding: 20px; border-radius: 4px; background: #f9f9f9;">
+                <h4 id="art1-card1-t" style="border-bottom: 1px solid rgba(135, 25, 8, 0.3); padding-bottom: 10px; margin-top: 0; color: #871908;">Magmatic Events</h4>
+                <p id="art1-card1-p" style="line-height: 1.5; color: #444; margin-bottom: 0;">Powered by the decompression of gas within magma. It includes types like Hawaiian (effusive) and Plinian (catastrophic explosions).</p>
+            </div>
+            <div style="min-height: 140px; border: 1px solid #eee; padding: 20px; border-radius: 4px; background: #f9f9f9;">
+                <h4 id="art1-card2-t" style="border-bottom: 1px solid rgba(135, 25, 8, 0.3); padding-bottom: 10px; margin-top: 0; color: #871908;">Environmental Hazards</h4>
+                <p id="art1-card2-p" style="line-height: 1.5; color: #444; margin-bottom: 0;">Primary risks include pyroclastic density currents, lahars (volcanic mudflows), and long-term atmospheric cooling due to ash.</p>
+            </div>
+        </div>
+
+        <h3 id="art1-sect-2" style="text-transform: uppercase; font-size: 1rem; letter-spacing: 1px; margin: 20px 0; color: #555;">Safety & Prevention Protocols</h3>
+        <div class="expandable-container" style="margin-bottom: 20px;">
+            <details style="border-bottom: 1px solid #ddd; padding: 12px 0; cursor: pointer;">
+                <summary id="art1-acc1-t" style="font-weight: bold; list-style: none; color: #222;">Monitoring and Evacuation ▼</summary>
+                <p id="art1-acc1-p" style="padding-top: 10px; color: #555; line-height: 1.5; margin: 0;">Modern volcanology uses seismic sensors and satellite data to predict eruptions. Evacuation remains the only 100% effective measure.</p>
+            </details>
+            <details style="border-bottom: 1px solid #ddd; padding: 12px 0; cursor: pointer;">
+                <summary id="art1-acc2-t" style="font-weight: bold; list-style: none; color: #222;">Historical Precedents ▼</summary>
+                <p id="art1-acc2-p" style="padding-top: 10px; color: #555; line-height: 1.5; margin: 0;">The 1815 Tambora eruption caused a "year without summer" globally, highlighting atmospheric impact.</p>
+            </details>
+        </div>
+
+        <p id="art1-footer" style="font-size: 0.7rem; color: #999; margin-top: 30px; text-align: right; text-transform: uppercase; letter-spacing: 0.5px;">
+            Data Source: National Geographic Scientific Database 2026
+        </p>
+    </div>
+
+
+    <div class="card" style="border-top: 5px solid #009688; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 40px; background: #fff; border-radius: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 1px solid #ddd; padding-bottom: 15px;">
+            <div>
+                <span id="art2-label" style="color: #009688; font-family: 'Montserrat', sans-serif; font-weight: bold; font-size: 0.8rem; letter-spacing: 2px;">PUBLIC HEALTH REPORT</span>
+                <h1 id="art2-title" style="font-size: 2.3rem; margin-top: 5px; margin-bottom: 0; color: #222;">Health Risks & Guidelines (PAHO/WHO)</h1>
+            </div>
+            <button onclick="toggleLanguageArt2()" id="langBtnArt2"
+                style="background: #009688; border: none; color: white; padding: 10px 20px; font-family: 'Montserrat', sans-serif; font-weight: bold; cursor: pointer; font-size: 0.7rem; letter-spacing: 1px; transition: 0.3s; border-radius: 4px;">
+                ESPAÑOL
+            </button>
+        </div>
+
+        <p id="art2-intro" style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 40px; border-left: 3px solid #009688; padding-left: 20px; color: #333;">
+            According to the Pan American Health Organization (PAHO), volcanic eruptions represent a high risk to human health, especially due to pyroclastic flows and continuous ash fall.
+        </p>
+       
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div style="border: 1px solid #eee; padding: 20px; border-radius: 4px; background: #fafafa; border-left: 4px solid #009688;">
+                <h4 id="art2-h1-t" style="color: #009688; margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid #e0e0e0; padding-bottom: 8px;">Main Health Threats</h4>
+                <ul id="art2-h1-list" style="padding-left: 20px; font-size: 0.95rem; line-height: 1.6; margin: 10px 0 0 0; color: #444;">
+                    <li><b>Pyroclastic flows:</b> Extremely fast currents of hot gas and rock; they account for roughly 60% of volcanic deaths in Latin America.</li>
+                    <li><b>Ash and gases:</b> Ash can cause severe respiratory conditions, skin lacerations, and eye irritation. Heavy gases like SO2 can accumulate in low areas causing asphyxiation.</li>
+                    <li><b>Water contamination:</b> Acid rain and volcanic ash deteriorate water supplies, making strict quality monitoring vital.</li>
+                </ul>
+            </div>
+            <div style="border: 1px solid #eee; padding: 20px; border-radius: 4px; background: #fafafa; border-left: 4px solid #009688;">
+                <h4 id="art2-h2-t" style="color: #009688; margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid #e0e0e0; padding-bottom: 8px;">Key Protective Actions</h4>
+                <ul id="art2-h2-list" style="padding-left: 20px; font-size: 0.95rem; line-height: 1.6; margin: 10px 0 0 0; color: #444;">
+                    <li><b>Stay indoors:</b> Close all external doors, windows, and fireplace dampers. Place damp towels underneath doors.</li>
+                    <li><b>Respiratory protection:</b> If you must go outside, wear masks or cloth over your mouth and nose, alongside goggles for eye protection.</li>
+                    <li><b>Protect water and food:</b> Keep water tanks covered, avoid drinking rainwater, and thoroughly wash fruits and vegetables.</li>
+                </ul>
+            </div>
+        </div>
+
+        <p id="art2-footer" style="font-size: 0.7rem; color: #999; margin-top: 40px; text-align: right; text-transform: uppercase; letter-spacing: 0.5px;">
+            Data Source: PAHO Official Volcanic Eruptions Module 2026
+        </p>
+    </div>
+
+
+    <div class="card" style="border-top: 5px solid #2b579a; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 40px; background: #fff; border-radius: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 1px solid #ddd; padding-bottom: 15px;">
+            <div>
+                <span id="art3-label" style="color: #2b579a; font-family: 'Montserrat', sans-serif; font-weight: bold; font-size: 0.8rem; letter-spacing: 2px;">ATMOSPHERIC RESEARCH</span>
+                <h1 id="art3-title" style="font-size: 2.3rem; margin-top: 5px; margin-bottom: 0; color: #222;">Volcanic Emissions: Origin and Atmospheric Impact</h1>
+            </div>
+            <button onclick="toggleLanguageArt3()" id="langBtnArt3"
+                style="background: #2b579a; border: none; color: white; padding: 10px 20px; font-family: 'Montserrat', sans-serif; font-weight: bold; cursor: pointer; font-size: 0.7rem; letter-spacing: 1px; transition: 0.3s; border-radius: 4px;">
+                ESPAÑOL
+            </button>
+        </div>
+
+        <p id="art3-intro" style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 40px; border-left: 3px solid #2b579a; padding-left: 20px; color: #333;">
+            Volcanoes act as direct pathways connecting the Earth's interior with the atmosphere. Scientific research shows that volcanic gases play a critical role in both local air quality and the stabilization of the global climate.
+        </p>
+       
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div style="border: 1px solid #eee; padding: 20px; border-radius: 4px; background: #fafafa; border-left: 4px solid #2b579a;">
+                <h4 id="art3-h1-t" style="color: #2b579a; margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid #e0e0e0; padding-bottom: 8px;">Gas Composition & Origin</h4>
+                <p id="art3-h1-p" style="font-size: 0.95rem; line-height: 1.6; color: #444; margin: 10px 0 0 0;">
+                    During magmatic ascent, decompression releases dissolved volatile substances. The most abundant gas is water vapor (H2O), followed by carbon dioxide (CO2) and sulfur dioxide (SO2). Trace amounts of hydrogen sulfide (H2S), hydrogen, and halogen compounds (HCl and HF) are also injected into the air.
+                </p>
+            </div>
+            <div style="border: 1px solid #eee; padding: 20px; border-radius: 4px; background: #fafafa; border-left: 4px solid #2b579a;">
+                <h4 id="art3-h2-t" style="color: #2b579a; margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid #e0e0e0; padding-bottom: 8px;">Atmospheric Consequences</h4>
+                <p id="art3-h2-p" style="font-size: 0.95rem; line-height: 1.6; color: #444; margin: 10px 0 0 0;">
+                    SO2 converts into sulfate aerosols in the stratosphere, reflecting solar radiation and inducing a global cooling effect. Locally, heavy eruptions alter precipitation patterns, trigger acid rain through halogen interactions, and significantly degrade surface air quality for nearby ecosystems.
+                </p>
+            </div>
+        </div>
+
+        <p id="art3-footer" style="font-size: 0.7rem; color: #999; margin-top: 40px; text-align: right; text-transform: uppercase; letter-spacing: 0.5px;">
+            Data Source: SciELO / Epistemus Journal (Vol. 15, No. 30)
+        </p>
+    </div>
+
+
+    <div class="card" style="border-top: 5px solid #1d3557; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 30px; background: #fff; border-radius: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 1px solid #ddd; padding-bottom: 15px;">
+            <div>
+                <span id="art4-label" style="color: #1d3557; font-family: 'Montserrat', sans-serif; font-weight: bold; font-size: 0.8rem; letter-spacing: 2px;">INSTITUTIONAL EMERGENCY PROTOCOLS</span>
+                <h1 id="art4-title" style="font-size: 2.3rem; margin-top: 5px; margin-bottom: 0; color: #222;">Emergency Measures: Volcanic Eruptions (UNAM)</h1>
+            </div>
+            <button onclick="toggleLanguageArt4()" id="langBtnArt4"
+                style="background: #1d3557; border: none; color: white; padding: 10px 20px; font-family: 'Montserrat', sans-serif; font-weight: bold; cursor: pointer; font-size: 0.7rem; letter-spacing: 1px; transition: 0.3s; border-radius: 4px;">
+                ESPAÑOL
+            </button>
+        </div>
+
+        <p id="art4-intro" style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 40px; border-left: 3px solid #1d3557; padding-left: 20px; color: #333;">
+            The National Autonomous University of Mexico (UNAM) provides a specific protocol to address volcanic contingencies. Preparedness and rapid structural organization within community spaces minimize operational vulnerabilities.
+        </p>
+       
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div style="border: 1px solid #eee; padding: 20px; border-radius: 4px; background: #fafafa; border-left: 4px solid #1d3557;">
+                <h4 id="art4-h1-t" style="color: #1d3557; margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid #e0e0e0; padding-bottom: 8px;">Action Phases: Before & During</h4>
+                <ul id="art4-h1-list" style="padding-left: 20px; font-size: 0.95rem; line-height: 1.6; margin: 10px 0 0 0; color: #444;">
+                    <li><b>Before:</b> Locate designated internal assembly points. Keep basic protective supplies ready, including plastic wrap to block machinery and lab equipment from fine particle ash.</li>
+                    <li><b>During:</b> Suspend all outdoor operations immediately. Cover water reservoirs and ventilation systems to trap sulfur particulate entry. Avoid driving due to compromised traction.</li>
+                </ul>
+            </div>
+            <div style="border: 1px solid #eee; padding: 20px; border-radius: 4px; background: #fafafa; border-left: 4px solid #1d3557;">
+                <h4 id="art4-h2-t" style="color: #1d3557; margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid #e0e0e0; padding-bottom: 8px;">Post-Eruption & Recovery</h4>
+                <ul id="art4-h2-list" style="padding-left: 20px; font-size: 0.95rem; line-height: 1.6; margin: 10px 0 0 0; color: #444;">
+                    <li><b>Ash Removal:</b> Sweep accumulated ash from roofs and courtyard gutters immediately. Do not wash ash down drains with water, as it creates an ultra-dense concrete-like block.</li>
+                    <li><b>Re-entry Standards:</b> Do not re-occupy academic or administrative spaces until local civil protection units officially verify air quality and safety conditions.</li>
+                </ul>
+            </div>
+        </div>
+
+        <p id="art4-footer" style="font-size: 0.7rem; color: #999; margin-top: 40px; text-align: right; text-transform: uppercase; letter-spacing: 0.5px;">
+            Data Source: UNAM Emergency Protocols Guide 2026
+        </p>
+    </div>
+
+</div>
+
+<script>
+// Diccionarios de traducción independientes
+const translationsArt1 = {
+    en: {
+        label: "SCIENTIFIC REVIEW",
+        title: "Volcanic Eruptions: Mechanics and Global Impact",
+        intro: "A volcanic eruption is a complex geological process where internal pressure forces magma to the surface. Understanding these events is crucial for global safety and environmental science.",
+        sect1: "Technical Classification",
+        card1T: "Magmatic Events",
+        card1P: "Powered by the decompression of gas within magma. It includes types like Hawaiian (effusive) and Plinian (catastrophic explosions).",
+        card2T: "Environmental Hazards",
+        card2P: "Primary risks include pyroclastic density currents, lahars (volcanic mudflows), and long-term atmospheric cooling due to ash.",
+        sect2: "Safety & Prevention Protocols",
+        acc1T: "Monitoring and Evacuation ▼",
+        acc1P: "Modern volcanology uses seismic sensors and satellite data to predict eruptions. Evacuation remains the only 100% effective measure.",
+        acc2T: "Historical Precedents ▼",
+        acc2P: "The 1815 Tambora eruption caused a \"year without summer\" globally, highlighting atmospheric impact.",
+        footer: "Data Source: National Geographic Scientific Database 2026",
+        btn: "ESPAÑOL"
+    },
+    es: {
+        label: "REVISIÓN CIENTÍFICA",
+        title: "Erupciones Volcánicas: Mecánica e Impacto Global",
+        intro: "Una erupción volcánica es un proceso geológico complejo donde la presión interna obliga al magma a salir a la superficie. Comprender estos eventos es crucial para la seguridad global y la ciencia ambiental.",
+        sect1: "Clasificación Técnica",
+        card1T: "Eventos Magmáticos",
+        card1P: "Impulsados por la descompresión de gases dentro del magma. Incluye tipos como el Hawaiano (efusivo) y el Pliniano (explosiones catastróficas).",
+        card2T: "Riesgos Ambientales",
+        card2P: "Los riesgos principales incluyen corrientes de densidad piroclástica, lahares (lodo volcánico) y enfriamiento atmosférico a largo plazo debido a la ceniza.",
+        sect2: "Protocolos de Seguridad y Prevención",
+        acc1T: "Monitoreo y Evacuación ▼",
+        acc1P: "La vulcanología moderna utiliza sensores sísmicos y datos satelitales para predecir erupciones. La evacuación sigue siendo la única medida 100% efectiva.",
+        acc2T: "Precedentes Históricos ▼",
+        acc2P: "La erupción del Tambora en 1815 causó un 'año sin verano' a nivel mundial. Esto resalta cómo los volcanes afectan no solo áreas locales, sino el clima de todo el planeta.",
+        footer: "Fuente de datos: Base de datos científica de National Geographic 2026",
+        btn: "ENGLISH"
+    }
+};
+
+const translationsArt2 = {
+    en: {
+        label: "PUBLIC HEALTH REPORT",
+        title: "Health Risks & Guidelines (PAHO/WHO)",
+        intro: "According to the Pan American Health Organization (PAHO), volcanic eruptions represent a high risk to human health, especially due to pyroclastic flows and continuous ash fall.",
+        h1T: "Main Health Threats",
+        h1List: "<li><b>Pyroclastic flows:</b> Extremely fast currents of hot gas and rock; they account for roughly 60% of volcanic deaths in Latin America.</li><li><b>Ash and gases:</b> Ash can cause severe respiratory conditions, skin lacerations, and eye irritation. Heavy gases like SO2 can accumulate in low areas causing asphyxiation.</li><li><b>Water contamination:</b> Acid rain and volcanic ash deteriorate water supplies, making strict quality monitoring vital.</li>",
+        h2T: "Key Protective Actions",
+        h2List: "<li><b>Stay indoors:</b> Close all external doors, windows, and fireplace dampers. Place damp towels underneath doors.</li><li><b>Respiratory protection:</b> If you must go outside, wear masks or cloth over your mouth and nose, alongside goggles for eye protection.</li><li><b>Protect water and food:</b> Keep water tanks covered, avoid drinking rainwater, and thoroughly wash fruits and vegetables.</li>",
+        footer: "Data Source: PAHO Official Volcanic Eruptions Module 2026",
+        btn: "ESPAÑOL"
+    },
+    es: {
+        label: "INFORME DE SALUD PÚBLICA",
+        title: "Riesgos para la Salud y Directrices (OPS/OMS)",
+        intro: "De acuerdo con la Organización Panamericana de la Salud (OPS), las erupciones volcánicas representan una alta amenaza para la salud humana, especialmente debido a los flujos piroclásticos y la caída continua de ceniza.",
+        h1T: "Principales Amenazas a la Salud",
+        h1List: "<li><b>Flujos piroclásticos:</b> Corrientes extremadamente rápidas de roca y gases ardientes; causan aproximadamente el 60% de las muertes por volcanes en América Latina.</li><li><b>Cenizas y gases:</b> La ceniza aumenta la demanda médica por conjuntivitis, dermatitis y problemas respiratorios. Gases pesados como el SO2 pueden acumularse en zonas bajas provocando asfixia.</li><li><b>Contaminación del agua:</b> La lluvia ácida y las cenizas deterioran los sistemas de agua potable, haciendo indispensable un monitoreo estricto de la calidad del agua.</li>",
+        h2T: "Acciones Clave de Protección",
+        h2List: "<li><b>Permanezca en interiores:</b> Cierre puertas y ventanas exteriores. Coloque toallas húmedas en la parte inferior de las puertas y evite usar ventiladores o extractores.</li><li><b>Protección respiratoria:</b> Si debe salir, utilice mascarilla o pañuelos húmedos sobre la boca/nariz y anteojos protectores para resguardar los ojos.</li><li><b>Protección de agua y alimentos:</b> Mantenga depósitos de agua tapados, evite el consumo de agua de lluvia y lave muy bien frutas y verduras antes de consumirlas.</li>",
+        footer: "Fuente de datos: Módulo Oficial de Erupciones Volcánicas de la OPS 2026",
+        btn: "ENGLISH"
+    }
+};
+
+const translationsArt3 = {
+    en: {
+        label: "ATMOSPHERIC RESEARCH",
+        title: "Volcanic Emissions: Origin and Atmospheric Impact",
+        intro: "Volcanoes act as direct pathways connecting the Earth's interior with the atmosphere. Scientific research shows that volcanic gases play a critical role in both local air quality and the stabilization of the global climate.",
+        h1T: "Gas Composition & Origin",
+        h1P: "During magmatic ascent, decompression releases dissolved volatile substances. The most abundant gas is water vapor (H2O), followed by carbon dioxide (CO2) and sulfur dioxide (SO2). Trace amounts of hydrogen sulfide (H2S), hydrogen, and halogen compounds (HCl and HF) are also injected into the air.",
+        h2T: "Atmospheric Consequences",
+        h2P: "SO2 converts into sulfate aerosols in the stratosphere, reflecting solar radiation and inducing a global cooling effect. Locally, heavy eruptions alter precipitation patterns, trigger acid rain through halogen interactions, and significantly degrade surface air quality for nearby ecosystems.",
+        footer: "Data Source: SciELO / Epistemus Journal (Vol. 15, No. 30)",
+        btn: "ESPAÑOL"
+    },
+    es: {
+        label: "INVESTIGACIÓN ATMOSFÉRICA",
+        title: "Emisiones volcánicas: origen e impacto en la atmósfera",
+        intro: "Los volcanes actúan como vías directas que conectan el interior de la Tierra con la atmósfera. Las investigaciones científicas demuestran que los gases volcánicos juegan un papel crítico tanto en la calidad del aire local como en la estabilización del clima global.",
+        h1T: "Composición de los Gases y Origen",
+        h1P: "Durante el ascenso magmático, la descompresión libera sustancias volátiles disueltas. El gas más abundante es el vapor de agua (H2O), seguido por el dióxido de carbono (CO2) y el dióxido de azufre (SO2). También se inyectan en el aire trazas de sulfuro de hidrógeno (H2S), hidrógeno y compuestos de halógenos (HCl y HF).",
+        h2T: "Consecuencias Atmosféricas",
+        h2P: "El SO2 se convierte en aerosoles de sulfato en la estratosfera, reflejando la radiación solar e induciendo un efecto de enfriamiento global. A nivel local, las erupciones fuertes alteran los patrones de precipitación, desencadenan lluvia ácida a través de interacciones con halógenos y degradan significativamente la calidad del aire en la superficie para los ecosistemas cercanos.",
+        footer: "Fuente de datos: SciELO / Revista Epistemus (Vol. 15, N°. 30)",
+        btn: "ENGLISH"
+    }
+};
+
+const translationsArt4 = {
+    en: {
+        label: "INSTITUTIONAL EMERGENCY PROTOCOLS",
+        title: "Emergency Measures: Volcanic Eruptions (UNAM)",
+        intro: "The National Autonomous University of Mexico (UNAM) provides a specific protocol to address volcanic contingencies. Preparedness and rapid structural organization within community spaces minimize operational vulnerabilities.",
+        h1T: "Action Phases: Before & During",
+        h1List: "<li><b>Before:</b> Locate designated internal assembly points. Keep basic protective supplies ready, including plastic wrap to block machinery and lab equipment from fine particle ash.</li><li><b>During:</b> Suspend all outdoor operations immediately. Cover water reservoirs and ventilation systems to trap sulfur particulate entry. Avoid driving due to compromised traction.</li>",
+        h2T: "Post-Eruption & Recovery",
+        h2List: "<li><b>Ash Removal:</b> Sweep accumulated ash from roofs and courtyard gutters immediately. Do not wash ash down drains with water, as it creates an ultra-dense concrete-like block.</li><li><b>Re-entry Standards:</b> Do not re-occupy academic or administrative spaces until local civil protection units officially verify air quality and safety conditions.</li>",
+        footer: "Data Source: UNAM Emergency Protocols Guide 2026",
+        btn: "ESPAÑOL"
+    },
+    es: {
+        label: "PROTOCOLOS INSTITUCIONALES DE EMERGENCIA",
+        title: "Medidas de Emergencia: Erupción Volcánica (UNAM)",
+        intro: "La Universidad Nacional Autónoma de México (UNAM) provee un protocolo específico para afrontar contingencias volcánicas. La preparación previa y la rápida organización estructural mitigan las vulnerabilidades de la comunidad.",
+        h1T: "Fases de Acción: Antes y Durante",
+        h1List: "<li><b>Antes:</b> Ubicar las zonas de seguridad internas. Mantener insumos de protección listos, incluyendo cubiertas plásticas para proteger maquinaria, equipos de cómputo y laboratorios del ingreso de ceniza fina.</li><li><b>Durante:</b> Suspender inmediatamente actividades al aire libre. Cubrir depósitos de agua y rejillas de ventilación. Evitar el uso de vehículos debido a la pérdida de tracción en suelo con ceniza.</li>",
+        h2T: "Post-Erupción y Recuperación",
+        h2List: "<li><b>Remoción de Ceniza:</b> Barrer la ceniza acumulada en techos y patios hacia costales. Evitar mojarla o arrojarla al drenaje, ya que genera taponamientos severos al solidificarse como concreto.</li><li><b>Retorno Seguro:</b> No reincorporarse a los planteles o dependencias hasta que las autoridades y protección civil certifiquen que la calidad del aire y la integridad estructural sean óptimas.</li>",
+        footer: "Fuente de datos: Guía de Medidas de Emergencia de la UNAM 2026",
+        btn: "ENGLISH"
+    }
+};
+
+// Estados de idioma independientes
+let currentLangArt1 = 'en';
+let currentLangArt2 = 'en';
+let currentLangArt3 = 'en';
+let currentLangArt4 = 'en';
+
+// Funciones de traducción independientes (IDs corregidos y saneados)
+function toggleLanguageArt1() {
+    currentLangArt1 = currentLangArt1 === 'en' ? 'es' : 'en';
+    const lang = translationsArt1[currentLangArt1];
+
+    document.getElementById('art1-label').innerText = lang.label;
+    document.getElementById('art1-title').innerText = lang.title;
+    document.getElementById('art1-intro').innerText = lang.intro;
+    document.getElementById('art1-sect-1').innerText = lang.sect1;
+    document.getElementById('art1-card1-t').innerText = lang.card1T;
+    document.getElementById('art1-card1-p').innerText = lang.card1P;
+    document.getElementById('art1-card2-t').innerText = lang.card2T;
+    document.getElementById('art1-card2-p').innerText = lang.card2P;
+    document.getElementById('art1-sect-2').innerText = lang.sect2;
+    document.getElementById('art1-acc1-t').innerText = lang.acc1T;
+    document.getElementById('art1-acc1-p').innerText = lang.acc1P;
+    document.getElementById('art1-acc2-t').innerText = lang.acc2T;
+    document.getElementById('art1-acc2-p').innerText = lang.acc2P;
+    document.getElementById('art1-footer').innerText = lang.footer;
+    document.getElementById('langBtnArt1').innerText = lang.btn;
+}
+
+function toggleLanguageArt2() {
+    currentLangArt2 = currentLangArt2 === 'en' ? 'es' : 'en';
+    const lang = translationsArt2[currentLangArt2];
+
+    document.getElementById('art2-label').innerText = lang.label;
+    document.getElementById('art2-title').innerText = lang.title;
+    document.getElementById('art2-intro').innerText = lang.intro;
+    document.getElementById('art2-h1-t').innerText = lang.h1T;
+    document.getElementById('art2-h1-list').innerHTML = lang.h1List;
+    document.getElementById('art2-h2-t').innerText = lang.h2T;
+    document.getElementById('art2-h2-list').innerHTML = lang.h2List;
+    document.getElementById('art2-footer').innerText = lang.footer;
+    document.getElementById('langBtnArt2').innerText = lang.btn;
+}
+
+function toggleLanguageArt3() {
+    currentLangArt3 = currentLangArt3 === 'en' ? 'es' : 'en';
+    const lang = translationsArt3[currentLangArt3];
+
+    document.getElementById('art3-label').innerText = lang.label;
+    document.getElementById('art3-title').innerText = lang.title;
+    document.getElementById('art3-intro').innerText = lang.intro;
+    document.getElementById('art3-h1-t').innerText = lang.h1T;
+    document.getElementById('art3-h1-p').innerText = lang.h1P;
+    document.getElementById('art3-h2-t').innerText = lang.h2T;
+    document.getElementById('art3-h2-p').innerText = lang.h2P;
+    document.getElementById('art3-footer').innerText = lang.footer;
+    document.getElementById('langBtnArt3').innerText = lang.btn;
+}
+
+function toggleLanguageArt4() {
+    currentLangArt4 = currentLangArt4 === 'en' ? 'es' : 'en';
+    const lang = translationsArt4[currentLangArt4];
+
+    document.getElementById('art4-label').innerText = lang.label;
+    document.getElementById('art4-title').innerText = lang.title;
+    document.getElementById('art4-intro').innerText = lang.intro;
+    document.getElementById('art4-h1-t').innerText = lang.h1T;
+    document.getElementById('art4-h1-list').innerHTML = lang.h1List;
+    document.getElementById('art4-h2-t').innerText = lang.h2T;
+    document.getElementById('art4-h2-list').innerHTML = lang.h2List;
+    document.getElementById('art4-footer').innerText = lang.footer;
+    document.getElementById('langBtnArt4').innerText = lang.btn;
+}
+</script>
+
+
+   <div id="game" class="page">
+
+        <div class="card" style="text-align: center;">
+
+            <h2>PIBB-SOUP</h2>
+
+            <iframe allow="fullscreen" width="795" height="690" frameborder="0" src="https://es.educaplay.com/juego/29025959-sopa_de_letras_erupciones_volcanicas_sencillas.html"></iframe>
+
+            <div class="card" style="text-align: center;">
+
+                <h2>PIBB-RELATE</h2>
+
+                <iframe allow="fullscreen; autoplay; allow-top-navigation-by-user-activation" allowfullscreen width="795" height="690" frameborder="0" src="https://es.educaplay.com/juego/29080203-erupciones_volcanicas_empareja_conceptos.html"></iframe>
+
+            </div>
+
+        </div>  
+
+    </div>
+
+
+    <div id="celebration-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; flex-direction: column; justify-content: center; align-items: center; pointer-events: none;">
+
+        <h1 style="color: #FFD700; font-size: 60px; font-family: 'Arial Black', sans-serif; text-shadow: 4px 4px #000; margin-bottom: 20px;">Lo lograste</h1>
+
+        <img src="img/Gemini_Generated_Image_6s55r36s55r36s55-removebg-preview.png">
+
+    </div>
+
+
+    <style>
+
+        @keyframes jump {
+
+            from { transform: translateY(0) scale(1); }
+
+            to { transform: translateY(-20px) scale(1.05); }
+
+        }
+
+    </style>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+
+    <script>
+
+        // Función principal de la animación
+
+        function lanzarCelebracion() {
+
+            const overlay = document.getElementById('celebration-overlay');
+
+            if (overlay.style.display === 'flex') return; // Evita que se repita si ya está activo
+
+
+            overlay.style.display = 'flex';
+
+           
+
+            // Configuración del confeti
+
+            var end = Date.now() + (5 * 1000);
+
+            var colors = ['#ffd700', '#ffffff', '#ff0000'];
+
+
+            (function frame() {
+
+                confetti({
+
+                    particleCount: 3,
+
+                    angle: 60,
+
+                    spread: 55,
+
+                    origin: { x: 0 },
+
+                    colors: colors
+
+                });
+
+                confetti({
+
+                    particleCount: 3,
+
+                    angle: 120,
+
+                    spread: 55,
+
+                    origin: { x: 1 },
+
+                    colors: colors
+
+                });
+
+
+                if (Date.now() < end) {
+
+                    requestAnimationFrame(frame);
+
+                }
+
+            }());
+
+
+            // Ocultar automáticamente a los 5 segundos
+
+            setTimeout(() => {
+
+                overlay.style.display = 'none';
+
+            }, 5000);
+
+        }
+
+
+        // Escuchar la tecla "6"
+
+        window.addEventListener('keydown', function(event) {
+
+            // Verificamos si la tecla presionada es el número 6
+
+            if (event.key === '6') {
+
+                lanzarCelebracion();
+
+            }
+
+        });
+
+
+        // TIP: Si haces clic fuera de los juegos y presionas 6, funcionará siempre.
+
+    </script>
+
+     <div id="fuentes" class="page">
+
+        <div class="card">
+
+            <h2>Bibliografía</h2>
+
+            <p>• Centro Nacional de Prevención de Desastres (CENAPRED). (2024). <em>Monitoreo volcánico y riesgos de lahares en México</em>. Secretaría de Seguridad y Protección Ciudadana.</p>
+
+            <p>• Compton, J. S., & Turekian, K. K. (2023). <em>The impact of volcanic minerals on soil fertility and ecosystem primary succession</em>. Geological Society of America Special Papers.</p>
+
+            <p>• Instituto de Geofísica, UNAM. (2025). <em>Interacción entre el cambio climático y la actividad geológica en el Cinturón Volcánico Transmexicano</em>. Universidad Nacional Autónoma de México.</p>
+
+            <p>• International Volcanic Health Hazard Network (IVHHN). (2023). <em>The Health Hazards of Volcanic Ash: A Guide for the Public</em>. IVHHN Publications.</p>
+
+            <p>• Organización Panamericana de la Salud (OPS). (2024). <em>Impacto de las erupciones volcánicas en la salud pública y medidas de mitigación</em>. Informe Técnico de Emergencias.</p>
+
+            <p>• Tarbuck, E. J., & Lutgens, F. K. (2017). <em>Ciencias de la Tierra: Una introducción a la geología física</em> (12.ª ed.). Pearson Educación.</p>
+
+            <p>• United States Geological Survey (USGS). (2023). <em>Volcanic Gas and Health Hazards</em>. Volcano Hazards Program.</p>
+
+        </div>
+
+    </div>
+
+
+    <footer>
+
+        <p>Pibb Eruption © 2026 | Investigación y Divulgación Científica</p>
+
+    </footer>
+
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+   
+
+    <script>
+
+        function toggleCard(header) {
+
+            const card = header.parentElement;
+
+            card.classList.toggle('active');
+
+        }
+
+
+        var map = L.map('map').setView([19.4326, -99.1332], 6);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+
+        var volcanes = [
+
+            {nombre: "Popocatépetl", coords: [19.0225, -98.6278], info: "Activo - Fase 2"},
+
+            {nombre: "Volcán de Colima", coords: [19.5122, -103.6167], info: "Estratovolcán activo"},
+
+            {nombre: "Paricutín", coords: [19.4931, -102.2514], info: "Nacido en 1943"}
+
+        ];
+
+
+        volcanes.forEach(function(v) {
+
+            L.marker(v.coords).addTo(map).bindPopup("<b>" + v.nombre + "</b><br>" + v.info);
+
+        });
+
+
+        const especies = [
+
+            { nombre: "Pino Canario", razon: "Corteza gruesa que resiste el fuego y capacidad de rebrotar tras calor intenso." },
+
+            { nombre: "Helechos y Musgos", razon: "Aprovechan la humedad y grietas en la lava; no requieren suelo profundo." },
+
+            { nombre: "Lechuga de Mar", razon: "Tolerante a suelos salinos y alta concentración de ceniza volcánica costera." },
+
+            { nombre: "Orquídea Elleanthus", razon: "Evolucionada para germinar en suelos ácidos con altos minerales volcánicos." },
+
+            { nombre: "Coníferas", razon: "Raíces profundas que extraen hierro y magnesio de las nuevas capas de suelo." },
+
+            { nombre: "Jaras y Escobones", razon: "Semillas que se activan mediante el choque térmico de la erupción." },
+
+            { nombre: "Blechnum", razon: "Hierbas que rebrotan desde rizomas protegidos bajo la capa de ceniza." },
+
+            { nombre: "Retamas", razon: "Fijan nitrógeno en suelo joven, facilitando la llegada de otras especies." }
+
+        ];
+
+
+        const contenedorEspecies = document.getElementById('grid-especies');
+
+        especies.forEach(esp => {
+
+            const card = document.createElement('div');
+
+            card.className = 'species-card';
+
+            card.innerHTML = `<div class="species-name">${esp.nombre}</div><div class="overlay">${esp.razon}</div>`;
+
+            contenedorEspecies.appendChild(card);
+
+        });
+
+
+        function showPage(pageId) {
+
+            const pages = document.querySelectorAll('.page');
+
+            pages.forEach(page => page.classList.remove('active'));
+
+            const activePage = document.getElementById(pageId);
+
+            if (activePage) activePage.classList.add('active');
+
+            if (pageId === 'cap1') {
+
+                setTimeout(() => {
+
+                    map.invalidateSize();
+
+                    initSuccessionChart();
+
+                }, 300);
+
+            }
+
+            window.scrollTo(0, 0);
+
+        }
+
+
+        const ashContainer = document.getElementById('ash-container');
+
+        for (let i = 0; i < 40; i++) {
+
+            const p = document.createElement('span');
+
+            p.style.left = Math.random() * 100 + '%';
+
+            p.style.animationDuration = Math.random() * 3 + 2 + 's';
+
+            p.style.animationDelay = Math.random() * 5 + 's';
+
+            ashContainer.appendChild(p);
+
+        }
+
+
+        // --- MODIFICACIÓN PARA EL CONTROL DEL PIZARRÓN ---
+
+let indiceTexto = 0;
+
+const textosPerrito = [
+
+    "¡Hola! Soy el Prof. Pibb. Haz clic para explorar la ecología volcánica.",
+
+    "¿Sabías que la ceniza volcánica, aunque destructiva, es un fertilizante natural riquísimo?",
+
+    "Tras la erupción, los líquenes son los primeros valientes en colonizar la roca desnuda.",
+
+    "A esto lo llamamos 'Sucesión Primaria'. ¡Es como si la naturaleza empezara de cero!",
+
+    "La biodiversidad tarda décadas en volver, pero regresa con más fuerza y suelos renovados.",
+
+    "¡Has llegado al final de la lección! Ahora puedes retroceder para repasar o seguir explorando la página."
+
+];
+
+
+function cambiarTextoPerrito(direccion) {
+
+    const elementoTexto = document.getElementById("texto-pizarron");
+
+   
+
+    // Aplicamos el límite:
+
+    // Solo avanzamos si no estamos en el último elemento
+
+    if (direccion === 1) {
+
+        if (indiceTexto < textosPerrito.length - 1) {
+
+            indiceTexto++;
+
+        }
+
+    }
+
+    // Solo retrocedemos si no estamos en el primero
+
+    else if (direccion === -1) {
+
+        if (indiceTexto > 0) {
+
+            indiceTexto--;
+
+        }
+
+    }
+
+
+    // Actualización visual
+
+    elementoTexto.style.opacity = 0;
+
+    setTimeout(() => {
+
+        elementoTexto.innerText = textosPerrito[indiceTexto];
+
+        elementoTexto.style.opacity = 1;
+
+    }, 200);
+
+}
+
+
+// Control por teclado (se mantiene igual, pero ahora respeta los límites del if anterior)
+
+document.addEventListener('keydown', (e) => {
+
+    if (document.getElementById('cap1').classList.contains('active')) {
+
+        if (e.key === "ArrowRight") cambiarTextoPerrito(1);
+
+        if (e.key === "ArrowLeft") cambiarTextoPerrito(-1);
+
+    }
+
+});
+
+        function toggleTheme() {
+
+            const body = document.body;
+
+            const currentTheme = body.getAttribute('data-theme');
+
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+            body.setAttribute('data-theme', newTheme);
+
+            document.getElementById('theme-btn').innerText = newTheme === 'light' ? '☀️' : '🌙';
+
+        }
+
+
+        let chartInstance = null;
+
+        function initSuccessionChart() {
+
+            const ctx = document.getElementById('canvasSuccession').getContext('2d');
+
+            if (chartInstance) chartInstance.destroy();
+
+
+            const labels = Array.from({length: 101}, (_, i) => i);
+
+            const pioneerData = labels.map(t => 80 * Math.exp(-0.05 * (t - 15) ** 2));
+
+            const matureData = labels.map(t => 100 / (1 + Math.exp(-0.1 * (t - 50))));
+
+            const nitrogenData = labels.map(t => 10 + 0.8 * t);
+
+
+            chartInstance = new Chart(ctx, {
+
+                type: 'line',
+
+                data: {
+
+                    labels: labels,
+
+                    datasets: [
+
+                        { label: 'Pioneras', data: pioneerData, borderColor: '#3498db', fill: false, tension: 0.4 },
+
+                        { label: 'Bosque Maduro', data: matureData, borderColor: '#27ae60', fill: false, tension: 0.4 },
+
+                        { label: 'Nitrógeno', data: nitrogenData, borderColor: '#e74c3c', borderDash: [5, 5], fill: false, yAxisID: 'y1' }
+
+                    ]
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false,
+
+                    scales: {
+
+                        y: { beginAtZero: true, title: { display: true, text: 'Densidad Poblacional (%)' } },
+
+                        y1: { position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Nivel de Nutrientes' } },
+
+                        x: { title: { display: true, text: 'Años tras la erupción' } }
+
+                    }
+
+                }
+
+            });
+
+        }
+
+    </script>
+
+</body>
+
+</html>
